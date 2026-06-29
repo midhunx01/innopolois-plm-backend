@@ -1,0 +1,16 @@
+services:
+  innopolois_plm_resource_db:
+    image: postgres:17
+    container_name: innopolois-plm-resource-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: devuser
+      POSTGRES_PASSWORD: devuser@pass
+      POSTGRES_DB: innopolois_plm_resource_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - innopolois_plm_resource_db_data:/var/lib/postgresql/data
+
+volumes:
+  innopolois_plm_resource_db_data:
