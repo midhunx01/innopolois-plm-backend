@@ -15,9 +15,11 @@ import {
   majorSpecRepo,
   materialCategoryRepo,
   subtypeRepo,
+  supplierRepo,
   unitRepo,
   userRepo,
 } from "../repository";
+import type { SupplierStatus } from "../db/schema";
 import type { Role } from "../db/schema";
 import { logger } from "../util";
 
@@ -128,6 +130,28 @@ const USERS: {
   { name: "Hannah Berg", email: "management@innopolis.bio", password: "management123", role: "Management", team: "Management", initials: "HB", hue: 320 },
 ];
 
+// Representative vendor master (FRD §7), mirroring the frontend supplier pool.
+const VENDORS: {
+  code: string; name: string; country: string; region: string; category: string;
+  categories: string[]; tier: number; status: SupplierStatus; approved: boolean;
+  contact: string; email: string; phone: string; gst_vat: string;
+  payment_terms: string; lead_time_avg: number; rating: number;
+  on_time_pct: number; quality_pct: number; risk_score: number;
+}[] = [
+  { code: "V-INOX", name: "Inox Valves Pvt Ltd", country: "India", region: "Domestic", category: "Mechanical Bought-out", categories: ["Mechanical Bought-out", "Pipe Fittings"], tier: 1, status: "Preferred", approved: true, contact: "S. Mehta", email: "sales@inoxvalves.in", phone: "+91 22 4012 8800", gst_vat: "27AABCI1234M1Z5", payment_terms: "30 days", lead_time_avg: 21, rating: 4.6, on_time_pct: 94.5, quality_pct: 97.2, risk_score: 18 },
+  { code: "V-GRUND", name: "Grundfos Pumps India", country: "India", region: "Domestic", category: "Mechanical Bought-out", categories: ["Mechanical Bought-out"], tier: 1, status: "Approved", approved: true, contact: "R. Iyer", email: "orders@grundfos.in", phone: "+91 44 6677 1200", gst_vat: "33AAACG5678P1Z2", payment_terms: "45 days", lead_time_avg: 28, rating: 4.4, on_time_pct: 91.0, quality_pct: 96.0, risk_score: 22 },
+  { code: "V-EH", name: "Endress+Hauser India", country: "India", region: "Domestic", category: "Field Instruments", categories: ["Field Instruments", "Panel Instruments"], tier: 1, status: "Preferred", approved: true, contact: "A. Kulkarni", email: "info@endress.in", phone: "+91 22 6694 1234", gst_vat: "27AAACE9012Q1Z8", payment_terms: "30 days", lead_time_avg: 35, rating: 4.7, on_time_pct: 95.5, quality_pct: 98.1, risk_score: 14 },
+  { code: "V-JINDAL", name: "Jindal SAW", country: "India", region: "Domestic", category: "Piping", categories: ["Piping", "Structural Materials"], tier: 2, status: "Approved", approved: true, contact: "P. Singh", email: "sales@jindalsaw.com", phone: "+91 11 2618 0800", gst_vat: "07AAACJ3456R1Z4", payment_terms: "60 days", lead_time_avg: 18, rating: 4.1, on_time_pct: 88.0, quality_pct: 93.5, risk_score: 30 },
+  { code: "V-ALFA", name: "Alfa Laval India", country: "India", region: "Domestic", category: "Process Equipment", categories: ["Process Equipment"], tier: 1, status: "Approved", approved: true, contact: "M. Desai", email: "process@alfalaval.in", phone: "+91 20 4071 7000", gst_vat: "27AAACA7890S1Z1", payment_terms: "45 days", lead_time_avg: 56, rating: 4.5, on_time_pct: 90.5, quality_pct: 97.8, risk_score: 20 },
+  { code: "V-POLY", name: "Polycab Wires", country: "India", region: "Domestic", category: "Electrical", categories: ["Electrical"], tier: 2, status: "Approved", approved: true, contact: "K. Shah", email: "b2b@polycab.com", phone: "+91 22 6735 1400", gst_vat: "27AAACP2345T1Z7", payment_terms: "30 days", lead_time_avg: 12, rating: 4.2, on_time_pct: 92.0, quality_pct: 94.0, risk_score: 24 },
+  { code: "V-MERCK", name: "Merck Life Science", country: "Germany", region: "Import", category: "Reagents", categories: ["Reagents"], tier: 1, status: "Preferred", approved: true, contact: "Dr. H. Klein", email: "lifescience@merck.com", phone: "+49 6151 720", gst_vat: "DE811138197", payment_terms: "Advance", lead_time_avg: 42, rating: 4.8, on_time_pct: 96.0, quality_pct: 99.0, risk_score: 12 },
+  { code: "V-SWAGE", name: "Swagelok India", country: "India", region: "Domestic", category: "Instrument Accessories", categories: ["Instrument Accessories", "Pipe Fittings"], tier: 1, status: "Approved", approved: true, contact: "N. Rao", email: "sales@swagelok.in", phone: "+91 80 4123 5600", gst_vat: "29AAACS6789U1Z3", payment_terms: "30 days", lead_time_avg: 24, rating: 4.5, on_time_pct: 93.0, quality_pct: 97.0, risk_score: 17 },
+  { code: "V-GARLK", name: "Garlock Sealing", country: "USA", region: "Import", category: "Packings & Fillings", categories: ["Packings & Fillings", "Elastomers"], tier: 2, status: "Conditional", approved: true, contact: "J. Reed", email: "intl@garlock.com", phone: "+1 800 448 6688", gst_vat: "US-EIN-160747", payment_terms: "Advance", lead_time_avg: 49, rating: 3.9, on_time_pct: 85.0, quality_pct: 95.0, risk_score: 38 },
+  { code: "V-TATA", name: "Tata Structural Steel", country: "India", region: "Domestic", category: "Structural Materials", categories: ["Structural Materials"], tier: 2, status: "Approved", approved: true, contact: "B. Kumar", email: "structurals@tatasteel.com", phone: "+91 657 664 5000", gst_vat: "20AAACT1234V1Z9", payment_terms: "45 days", lead_time_avg: 20, rating: 4.0, on_time_pct: 87.5, quality_pct: 92.0, risk_score: 28 },
+  { code: "V-HIMED", name: "HiMedia Labs", country: "India", region: "Domestic", category: "Reagents", categories: ["Reagents", "Consumables"], tier: 3, status: "Under Review", approved: false, contact: "S. Joshi", email: "sales@himedialabs.com", phone: "+91 22 6147 1919", gst_vat: "27AAACH5678W1Z6", payment_terms: "Advance", lead_time_avg: 10, rating: 3.6, on_time_pct: 82.0, quality_pct: 90.0, risk_score: 45 },
+  { code: "V-LKVAL", name: "L&T Valves", country: "India", region: "Domestic", category: "Mechanical Bought-out", categories: ["Mechanical Bought-out", "Pipe Fittings"], tier: 1, status: "Approved", approved: true, contact: "G. Nair", email: "valves@lntvalves.com", phone: "+91 44 2249 2900", gst_vat: "33AAACL9012X1Z0", payment_terms: "30 days", lead_time_avg: 26, rating: 4.3, on_time_pct: 90.0, quality_pct: 95.5, risk_score: 23 },
+];
+
 async function seed() {
   await connectToDatabase();
 
@@ -191,6 +215,34 @@ async function seed() {
   for (const u of UNITS) {
     if (await unitRepo.findByCode(u.code)) continue;
     await unitRepo.create({ id: uuidv7(), code: u.code, name: u.name, is_active: true });
+  }
+
+  // Vendors (FRD §7)
+  for (const v of VENDORS) {
+    if (await supplierRepo.findByCode(v.code)) continue;
+    await supplierRepo.create({
+      id: uuidv7(),
+      code: v.code,
+      name: v.name,
+      country: v.country,
+      region: v.region,
+      category: v.category,
+      categories_supplied: v.categories,
+      tier: v.tier,
+      contact: v.contact,
+      email: v.email,
+      phone: v.phone,
+      gst_vat: v.gst_vat,
+      payment_terms: v.payment_terms,
+      lead_time_avg: v.lead_time_avg,
+      rating: v.rating.toString(),
+      on_time_pct: v.on_time_pct.toString(),
+      quality_pct: v.quality_pct.toString(),
+      risk_score: v.risk_score.toString(),
+      status: v.status,
+      approved: v.approved,
+    });
+    logger.info(`Seeded vendor ${v.code} — ${v.name}`);
   }
 
   logger.info("Seed complete.");

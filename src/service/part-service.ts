@@ -8,6 +8,7 @@ import {
   PartFilters,
   PartRepoType,
   SubtypeRepoType,
+  SupplierRepoType,
 } from "../repository";
 import { ConflictError, NotFoundError, ValidationError } from "../util/error";
 import { buildMaterialCode } from "../util/helper/material-code";
@@ -18,6 +19,7 @@ export interface PartServiceDeps {
   subtypeRepo: SubtypeRepoType;
   majorSpecRepo: MajorSpecRepoType;
   gradeRepo: GradeRepoType;
+  supplierRepo: SupplierRepoType;
 }
 
 const num = (v: number | undefined, fallback = "0"): string =>
@@ -50,6 +52,11 @@ const create = async (
     const g = await deps.gradeRepo.findById(dto.grade_id);
     if (!g) throw new ValidationError("grade_id does not exist");
     detailSpecCode = g.code;
+  }
+
+  if (dto.supplier_id) {
+    const supplier = await deps.supplierRepo.findById(dto.supplier_id);
+    if (!supplier) throw new ValidationError("supplier_id does not exist");
   }
 
   // 2. Build the intelligent material code TT-SS-MM-DDDD (FRD §4).
@@ -132,10 +139,16 @@ const getById = async (id: string, partRepo: PartRepoType) => {
 const update = async (
   id: string,
   dto: UpdatePartDtoType,
-  partRepo: PartRepoType
+  deps: PartServiceDeps
 ) => {
+  const { partRepo } = deps;
   const existing = await partRepo.findById(id);
   if (!existing) throw new NotFoundError("Material not found");
+
+  if (dto.supplier_id) {
+    const supplier = await deps.supplierRepo.findById(dto.supplier_id);
+    if (!supplier) throw new ValidationError("supplier_id does not exist");
+  }
 
   // Code-composition fields are immutable (enforced by the DTO). Everything
   // else is a straight patch; numeric fields are stringified for Drizzle.

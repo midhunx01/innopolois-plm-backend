@@ -8,6 +8,27 @@
       "when": 1782716762697,
       "tag": "0000_init",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1782719118952,
+      "tag": "0001_vendors",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1782720094918,
+      "tag": "0002_project_bom",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1782721029909,
+      "tag": "0003_procurement",
+      "breakpoints": true
     }
   ]
 }

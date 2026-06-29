@@ -4,8 +4,9 @@ BOM & Procurement / PLM backend for **Innopolis Bio Innovations**. The
 Material Master is the single source of truth ("Engineering Data Backbone");
 Project BOM, Vendors, Procurement, Inventory and Reports build around it.
 
-Implements the Innopolis BOM FRD v1.0. **Module 1 (Material Master, FRD §3–6)
-is implemented**; the remaining modules follow the same layered pattern.
+Implements the Innopolis BOM FRD v1.0. **Modules 1–4** are implemented —
+Material Master (§3–6), Project BOM (§8–10), Vendor Database (§7) and
+Procurement (§11–14); the remaining modules follow the same layered pattern.
 
 ## Stack
 
@@ -71,6 +72,76 @@ e.g. `MB-VA-15-3040` = Mechanical Bought-out · Valve · 15 mm · SS 304.
 | GET/POST/PATCH/DELETE | `/api/parts[/:id]` | read: any · write: Engineering |
 
 `GET /api/parts` supports `?search=&categoryId=&subtypeId=&lifecycle=&availability=&sourcing=&page=&pageSize=`.
+
+## API — Module 3: Vendor Database
+
+| Method | Path | Roles |
+|--------|------|-------|
+| GET/POST/PATCH/DELETE | `/api/suppliers[/:id]` | read: any · write: Purchase |
+
+`GET /api/suppliers` supports `?search=&status=&country=&region=&category=&approved=&tier=&page=&pageSize=`.
+Materials link to a vendor via `parts.supplier_id` (FK → `suppliers.id`).
+
+## API — Module 2: Project BOM
+
+| Method | Path | Roles |
+|--------|------|-------|
+| GET/POST/PATCH/DELETE | `/api/projects[/:id]` | read: any · write: Engineering |
+| GET/POST/PATCH/DELETE | `/api/project-boms[/:id]` | read: any · write: Engineering |
+| POST | `/api/project-boms/:id/transition` | stage-gated (see below) |
+| GET/POST | `/api/project-boms/:bomId/lines` | read: any · add: Engineering |
+| PATCH/DELETE | `/api/bom-lines/:id` | Engineering |
+
+- Project numbers auto-generate as `INP-{year}-{seq}`; BOM numbers as `BOM-{seq}`.
+- BOM lines snapshot the material (code, name, cost, lead time) at add-time;
+  `GET /api/project-boms/:id` returns the BOM with its `lines` and `audit` trail
+  and live aggregates (`line_items`, `total_value`, `unique_materials`,
+  `critical_items`, `long_lead_items`).
+- Lines are editable only while the BOM is in **Draft**.
+
+**Approval workflow (FRD §10)** — `POST /:id/transition` with `{action:"advance"|"reject", comment?}`:
+
+```
+Draft ──▶ Technical Review ──▶ Commercial Review ──▶ Approved ──▶ Released for Purchase
+ (Engineering)    (Engineering)        (Commercial)      (Purchase)
+```
+
+Each stage may be actioned only by the role above (or Administrator); `reject`
+sends the BOM back to Draft. Every transition is recorded in `bom_audit_entries`
+(from/to stage, action, user, comment, timestamp).
+
+**BOM analysis (FRD §11 / procedure p6)** — `GET /api/project-boms/:id/analysis?groupBy=category|vendor|leadtime|procurement`
+returns each group's cost total + share of the BOM (e.g. which category takes the most money).
+
+## API — Module 4: Procurement
+
+| Method | Path | Roles |
+|--------|------|-------|
+| GET/POST/PATCH/DELETE | `/api/rfqs[/:id]` | read: any · write: Purchase |
+| POST | `/api/rfqs/:id/send` | Purchase |
+| GET/POST | `/api/rfqs/:id/quotations` | read: any · record: Purchase |
+| GET | `/api/rfqs/:id/comparison` | Purchase, Commercial |
+| GET | `/api/quotations/:id` | any |
+| POST | `/api/quotations/:id/award` | Purchase, Commercial |
+| GET/POST/DELETE | `/api/purchase-orders[/:id]` | read: any · write: Purchase |
+| POST | `/api/purchase-orders/:id/status` | Purchase |
+| POST | `/api/purchase-orders/:id/receive` | Purchase, Stores |
+
+**Procure-to-receive flow (FRD §12–14):**
+
+```
+RFQ (from released BOM or ad hoc) ──send──▶ Vendors submit Quotations
+   ──▶ Comparison (auto rank by total, score) ──▶ Award winner
+   ──▶ Purchase Order (Draft→Pending Approval→Open) ──▶ Goods Receipt
+       (Partially Received → Received, drives received_pct)
+```
+
+- RFQ numbers `RFQ-{seq}`, PO numbers `PO-{seq}`.
+- `GET /api/rfqs/:id` returns the RFQ with `lines` + `quotations`; comparison
+  ranks cheapest = rank 1 / score 100.
+- A PO can be raised from an awarded quotation (`from_quotation_id`) or manually.
+  Receipt updates per-line `received_qty` + the PO `received_pct`; actual stock
+  posting lands with the Inventory module (FRD §14).
 
 ## Demo logins (after `npm run seed`)
 

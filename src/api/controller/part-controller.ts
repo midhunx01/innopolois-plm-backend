@@ -19,6 +19,7 @@ const deps: service.PartServiceDeps = {
   subtypeRepo: repository.subtypeRepo,
   majorSpecRepo: repository.majorSpecRepo,
   gradeRepo: repository.gradeRepo,
+  supplierRepo: repository.supplierRepo,
 };
 
 export const createPart = async (
@@ -109,7 +110,7 @@ export const updatePart = async (
     const result = await partService.update(
       idValidation.data,
       bodyValidation.data,
-      partRepo
+      deps
     );
     ApiResponse.success(res, 200, "Material updated", result);
   } catch (error) {

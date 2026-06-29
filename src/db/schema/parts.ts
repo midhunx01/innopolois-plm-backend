@@ -18,6 +18,7 @@ import { subtypes } from "./subtypes";
 import { majorSpecs } from "./major-specs";
 import { grades } from "./grades";
 import { users } from "./users";
+import { suppliers } from "./suppliers";
 
 // The Material Master record (FRD §3, §5) — the single source of truth. Every
 // BOM line references one of these. `part_number` is the intelligent code
@@ -71,8 +72,8 @@ export const parts = pgTable(
       .default("0")
       .notNull(),
     lead_time_days: integer("lead_time_days").default(0).notNull(),
-    // Preferred supplier — FK added when the Vendor module lands.
-    supplier_id: uuid("supplier_id"),
+    // Preferred supplier (Vendor Master).
+    supplier_id: uuid("supplier_id").references(() => suppliers.id),
     manufacturer_part_number: varchar("manufacturer_part_number", {
       length: 120,
     })

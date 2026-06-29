@@ -38,3 +38,106 @@ export const availabilityEnum = pgEnum("availability", [
   "Out of Stock",
 ]);
 export type Availability = (typeof availabilityEnum.enumValues)[number];
+
+// ── Vendor approval status (FRD §7, frontend `Supplier.status`) ───────────────
+export const supplierStatusEnum = pgEnum("supplier_status", [
+  "Approved",
+  "Preferred",
+  "Conditional",
+  "Under Review",
+]);
+export type SupplierStatus = (typeof supplierStatusEnum.enumValues)[number];
+
+// ── Project lifecycle stage (FRD §1, frontend `ProjectStage`) ─────────────────
+export const projectStageEnum = pgEnum("project_stage", [
+  "Enquiry",
+  "Technical Evaluation",
+  "Quotation",
+  "Project Order",
+  "Detailed Engineering",
+  "Final BOM",
+  "Purchase Release",
+  "Procurement",
+  "Fulfilment",
+  "Completed",
+]);
+export type ProjectStage = (typeof projectStageEnum.enumValues)[number];
+
+// ── BOM approval workflow stage (FRD §10, frontend `BomStage`) ────────────────
+export const bomStageEnum = pgEnum("bom_stage", [
+  "Draft",
+  "Technical Review",
+  "Commercial Review",
+  "Approved",
+  "Released for Purchase",
+]);
+export type BomStage = (typeof bomStageEnum.enumValues)[number];
+
+// Ordered list used by the workflow engine to compute the next stage.
+export const BOM_STAGES: BomStage[] = [
+  "Draft",
+  "Technical Review",
+  "Commercial Review",
+  "Approved",
+  "Released for Purchase",
+];
+
+// ── BOM type (FRD §8) ─────────────────────────────────────────────────────────
+export const bomTypeEnum = pgEnum("bom_type", [
+  "Engineering",
+  "Procurement",
+  "Final Released",
+]);
+export type BomType = (typeof bomTypeEnum.enumValues)[number];
+
+// ── Priority (used by POs; frontend `EcoPriority`) ────────────────────────────
+export const priorityEnum = pgEnum("priority", [
+  "Low",
+  "Medium",
+  "High",
+  "Critical",
+]);
+export type Priority = (typeof priorityEnum.enumValues)[number];
+
+// ── RFQ mode (FRD §12, frontend `RfqMode`) ────────────────────────────────────
+export const rfqModeEnum = pgEnum("rfq_mode", [
+  "Vendor-wise",
+  "Category-wise",
+  "Package-wise",
+  "Single Item",
+  "Bulk",
+]);
+export type RfqMode = (typeof rfqModeEnum.enumValues)[number];
+
+// ── RFQ status (FRD §12, frontend `RfqStatus`) ────────────────────────────────
+export const rfqStatusEnum = pgEnum("rfq_status", [
+  "Draft",
+  "Sent",
+  "Quotes In",
+  "Comparison",
+  "Awarded",
+  "Closed",
+]);
+export type RfqStatus = (typeof rfqStatusEnum.enumValues)[number];
+
+// ── Quotation status (FRD §13, frontend `QuotationStatus`) ────────────────────
+export const quotationStatusEnum = pgEnum("quotation_status", [
+  "Pending",
+  "Received",
+  "Under Review",
+  "Awarded",
+  "Rejected",
+]);
+export type QuotationStatus = (typeof quotationStatusEnum.enumValues)[number];
+
+// ── Purchase Order status (FRD §13, frontend `PoStatus`) ──────────────────────
+export const poStatusEnum = pgEnum("po_status", [
+  "Draft",
+  "Pending Approval",
+  "Open",
+  "Partially Received",
+  "Received",
+  "Closed",
+  "Cancelled",
+]);
+export type PoStatus = (typeof poStatusEnum.enumValues)[number];
