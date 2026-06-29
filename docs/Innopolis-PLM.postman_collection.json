@@ -1,0 +1,2842 @@
+{
+  "info": {
+    "_postman_id": "innopolis-plm-0000-0000-0000-000000000001",
+    "name": "Innopolis PLM API",
+    "description": "Full API for the Innopolis BOM/PLM backend (FRD Modules 1-6).\n\nSetup:\n1. Set {{baseUrl}} (default http://localhost:7100).\n2. Run Auth → Login (stores {{token}}). Switch the email/password to test other roles.\n3. Run the folders top-to-bottom — create requests capture IDs into collection variables so the flow chains.\n\nNote: numeric fields come back as JSON strings (parse with Number).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:7100"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "categoryId",
+      "value": ""
+    },
+    {
+      "key": "subtypeId",
+      "value": ""
+    },
+    {
+      "key": "majorSpecId",
+      "value": ""
+    },
+    {
+      "key": "gradeId",
+      "value": ""
+    },
+    {
+      "key": "unitId",
+      "value": ""
+    },
+    {
+      "key": "partId",
+      "value": ""
+    },
+    {
+      "key": "supplierId",
+      "value": ""
+    },
+    {
+      "key": "projectId",
+      "value": ""
+    },
+    {
+      "key": "bomId",
+      "value": ""
+    },
+    {
+      "key": "bomLineId",
+      "value": ""
+    },
+    {
+      "key": "rfqId",
+      "value": ""
+    },
+    {
+      "key": "rfqLineId",
+      "value": ""
+    },
+    {
+      "key": "quotationId",
+      "value": ""
+    },
+    {
+      "key": "poId",
+      "value": ""
+    },
+    {
+      "key": "poLineId",
+      "value": ""
+    },
+    {
+      "key": "warehouseId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "description": "Run Login first — it stores the JWT in the {{token}} collection variable.",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Sets {{token}} for all other requests. Try other demo logins: admin@innopolis.bio/admin123, purchase@…/purchase123, commercial@…/commercial123, stores@…/stores123, management@…/management123.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"engineer@innopolis.bio\",\n  \"password\": \"engineer123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json().data;",
+                  "pm.collectionVariables.set(\"token\", data.token);",
+                  "pm.collectionVariables.set(\"userId\", data.user.id);",
+                  "pm.test(\"token received\", () => pm.expect(data.token).to.be.a(\"string\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Material Master",
+      "item": [
+        {
+          "name": "Categories",
+          "item": [
+            {
+              "name": "List categories",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/material-categories",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "material-categories"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const d = pm.response.json().data;",
+                      "if (d && d.length) pm.collectionVariables.set('categoryId', d[0].id);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Create category (admin)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/material-categories",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "material-categories"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Custom Category\",\n  \"type_code\": \"CX\",\n  \"default_uom\": \"Nos\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const json = pm.response.json();",
+                      "const data = json.data || {};",
+                      "pm.collectionVariables.set(\"categoryId\", data.id);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Get category",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/material-categories/{{categoryId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "material-categories",
+                    "{{categoryId}}"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Update category (admin)",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/material-categories/{{categoryId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "material-categories",
+                    "{{categoryId}}"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"default_uom\": \"Set\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Delete category (admin)",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/material-categories/{{categoryId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "material-categories",
+                    "{{categoryId}}"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Subtypes",
+          "item": [
+            {
+              "name": "List subtypes for category",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/material-categories/{{categoryId}}/subtypes",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "material-categories",
+                    "{{categoryId}}",
+                    "subtypes"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const d = pm.response.json().data;",
+                      "if (d && d.length) pm.collectionVariables.set('subtypeId', d[0].id);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Create subtype (admin)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/subtypes",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "subtypes"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"category_id\": \"{{categoryId}}\",\n  \"name\": \"Custom Subtype\",\n  \"code\": \"CS\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const json = pm.response.json();",
+                      "const data = json.data || {};",
+                      "pm.collectionVariables.set(\"subtypeId\", data.id);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Get subtype",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/subtypes/{{subtypeId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "subtypes",
+                    "{{subtypeId}}"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Update subtype (admin)",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/subtypes/{{subtypeId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "subtypes",
+                    "{{subtypeId}}"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Renamed Subtype\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Delete subtype (admin)",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/subtypes/{{subtypeId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "subtypes",
+                    "{{subtypeId}}"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Major Specs",
+          "item": [
+            {
+              "name": "List major specs",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/major-specs",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "major-specs"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const d=pm.response.json().data; if(d&&d.length) pm.collectionVariables.set('majorSpecId', d[0].id);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Create major spec (admin)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/major-specs",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "major-specs"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"code\": \"99\",\n  \"label\": \"Custom Size\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const json = pm.response.json();",
+                      "const data = json.data || {};",
+                      "pm.collectionVariables.set(\"majorSpecId\", data.id);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Get major spec",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/major-specs/{{majorSpecId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "major-specs",
+                    "{{majorSpecId}}"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Update major spec (admin)",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/major-specs/{{majorSpecId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "major-specs",
+                    "{{majorSpecId}}"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"label\": \"Renamed\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Delete major spec (admin)",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/major-specs/{{majorSpecId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "major-specs",
+                    "{{majorSpecId}}"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Grades",
+          "item": [
+            {
+              "name": "List grades",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/grades",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "grades"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const d=pm.response.json().data; if(d&&d.length) pm.collectionVariables.set('gradeId', d[0].id);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Create grade (admin)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/grades",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "grades"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"code\": \"CUST\",\n  \"label\": \"Custom Grade\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const json = pm.response.json();",
+                      "const data = json.data || {};",
+                      "pm.collectionVariables.set(\"gradeId\", data.id);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Get grade",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/grades/{{gradeId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "grades",
+                    "{{gradeId}}"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Update grade (admin)",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/grades/{{gradeId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "grades",
+                    "{{gradeId}}"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"label\": \"Renamed\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Delete grade (admin)",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/grades/{{gradeId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "grades",
+                    "{{gradeId}}"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Units",
+          "item": [
+            {
+              "name": "List units",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/units",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "units"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const d=pm.response.json().data; if(d&&d.length) pm.collectionVariables.set('unitId', d[0].id);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Create unit (admin)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/units",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "units"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"code\": \"Pair\",\n  \"name\": \"Pair\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const json = pm.response.json();",
+                      "const data = json.data || {};",
+                      "pm.collectionVariables.set(\"unitId\", data.id);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Get unit",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/units/{{unitId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "units",
+                    "{{unitId}}"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Update unit (admin)",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/units/{{unitId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "units",
+                    "{{unitId}}"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Pairs\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Delete unit (admin)",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/units/{{unitId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "units",
+                    "{{unitId}}"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Materials (Parts)",
+          "description": "Material code TT-SS-MM-DDDD is generated server-side from the selected masters.",
+          "item": [
+            {
+              "name": "List materials",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/parts?search=&categoryId=&lifecycle=&availability=&page=1&pageSize=50",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "parts"
+                  ],
+                  "query": [
+                    {
+                      "key": "search",
+                      "value": ""
+                    },
+                    {
+                      "key": "categoryId",
+                      "value": ""
+                    },
+                    {
+                      "key": "lifecycle",
+                      "value": ""
+                    },
+                    {
+                      "key": "availability",
+                      "value": ""
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "pageSize",
+                      "value": "50"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const d=pm.response.json().data; if(d&&d.length) pm.collectionVariables.set('partId', d[0].id);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Create material (Engineering)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/parts",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "parts"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"category_id\": \"{{categoryId}}\",\n  \"subtype_id\": \"{{subtypeId}}\",\n  \"major_spec_id\": \"{{majorSpecId}}\",\n  \"grade_id\": \"{{gradeId}}\",\n  \"name\": \"SS304 Ball Valve 15mm\",\n  \"description\": \"2-way ball valve\",\n  \"material\": \"Stainless Steel 304\",\n  \"revision\": \"A\",\n  \"lifecycle\": \"Concept\",\n  \"sourcing\": \"Buy\",\n  \"weight_kg\": 1.2,\n  \"unit_cost\": 1250.5,\n  \"lead_time_days\": 21,\n  \"reorder_point\": 5,\n  \"uom\": \"Nos\",\n  \"compliance\": [\n    \"ASME\"\n  ],\n  \"tags\": [\n    \"critical-path\"\n  ],\n  \"thumbnail_hue\": 172\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const json = pm.response.json();",
+                      "const data = json.data || {};",
+                      "pm.collectionVariables.set(\"partId\", data.id);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Get material",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/parts/{{partId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "parts",
+                    "{{partId}}"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Update material (Engineering)",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/parts/{{partId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "parts",
+                    "{{partId}}"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"unit_cost\": 1399,\n  \"lifecycle\": \"Released\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Delete material (Engineering)",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/parts/{{partId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "parts",
+                    "{{partId}}"
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Vendor Database",
+      "item": [
+        {
+          "name": "List vendors",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/suppliers?search=&status=&approved=&page=1&pageSize=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "suppliers"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "status",
+                  "value": ""
+                },
+                {
+                  "key": "approved",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "50"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d=pm.response.json().data; if(d&&d.length) pm.collectionVariables.set('supplierId', d[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create vendor (Purchase)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/suppliers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "suppliers"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"V-CUST1\",\n  \"name\": \"Custom Vendor Pvt Ltd\",\n  \"country\": \"India\",\n  \"region\": \"Domestic\",\n  \"category\": \"Mechanical Bought-out\",\n  \"categories_supplied\": [\n    \"Mechanical Bought-out\"\n  ],\n  \"tier\": 2,\n  \"contact\": \"A. Kumar\",\n  \"email\": \"sales@custom.in\",\n  \"phone\": \"+91 20 1234 5678\",\n  \"gst_vat\": \"27ABCDE1234F1Z5\",\n  \"payment_terms\": \"30 days\",\n  \"lead_time_avg\": 18,\n  \"rating\": 4.2,\n  \"on_time_pct\": 91,\n  \"quality_pct\": 95,\n  \"status\": \"Approved\",\n  \"approved\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "const data = json.data || {};",
+                  "pm.collectionVariables.set(\"supplierId\", data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get vendor",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/suppliers/{{supplierId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "suppliers",
+                "{{supplierId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update vendor (Purchase)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/suppliers/{{supplierId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "suppliers",
+                "{{supplierId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Preferred\",\n  \"on_time_pct\": 93\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Delete vendor (Purchase)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/suppliers/{{supplierId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "suppliers",
+                "{{supplierId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Project BOM",
+      "item": [
+        {
+          "name": "Projects",
+          "item": [
+            {
+              "name": "List projects",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/projects?search=&stage=&page=1&pageSize=50",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "projects"
+                  ],
+                  "query": [
+                    {
+                      "key": "search",
+                      "value": ""
+                    },
+                    {
+                      "key": "stage",
+                      "value": ""
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "pageSize",
+                      "value": "50"
+                    }
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const d=pm.response.json().data; if(d&&d.length) pm.collectionVariables.set('projectId', d[0].id);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Create project (Engineering)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/projects",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "projects"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Fermenter Skid 5000L\",\n  \"customer\": \"Serum Institute\",\n  \"family\": \"Fermentation\",\n  \"target_cost\": 2500000\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const json = pm.response.json();",
+                      "const data = json.data || {};",
+                      "pm.collectionVariables.set(\"projectId\", data.id);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Get project",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/projects/{{projectId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "projects",
+                    "{{projectId}}"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Update project (Engineering)",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/projects/{{projectId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "projects",
+                    "{{projectId}}"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"stage\": \"Detailed Engineering\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Delete project (Engineering)",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/projects/{{projectId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "projects",
+                    "{{projectId}}"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "BOMs",
+          "item": [
+            {
+              "name": "Create BOM (Engineering)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/project-boms",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "project-boms"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"project_id\": \"{{projectId}}\",\n  \"bom_type\": \"Engineering\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const json = pm.response.json();",
+                      "const data = json.data || {};",
+                      "pm.collectionVariables.set(\"bomId\", data.id);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "List BOMs",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/project-boms?projectId={{projectId}}&stage=&page=1&pageSize=50",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "project-boms"
+                  ],
+                  "query": [
+                    {
+                      "key": "projectId",
+                      "value": "{{projectId}}"
+                    },
+                    {
+                      "key": "stage",
+                      "value": ""
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "pageSize",
+                      "value": "50"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Get BOM (detail: lines + audit)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/project-boms/{{bomId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "project-boms",
+                    "{{bomId}}"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Update BOM (Engineering)",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/project-boms/{{bomId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "project-boms",
+                    "{{bomId}}"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"revision\": \"B\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Add BOM line (Engineering, Draft)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/project-boms/{{bomId}}/lines",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "project-boms",
+                    "{{bomId}}",
+                    "lines"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"part_id\": \"{{partId}}\",\n  \"quantity\": 4,\n  \"vendor_id\": \"{{supplierId}}\",\n  \"is_critical\": true,\n  \"buying_notes\": \"PN class 150\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const json = pm.response.json();",
+                      "const data = json.data || {};",
+                      "pm.collectionVariables.set(\"bomLineId\", data.id);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "List BOM lines",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/project-boms/{{bomId}}/lines",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "project-boms",
+                    "{{bomId}}",
+                    "lines"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Update BOM line (Draft)",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/bom-lines/{{bomLineId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "bom-lines",
+                    "{{bomLineId}}"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"quantity\": 6,\n  \"remarks\": \"qty revised\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Delete BOM line (Draft)",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/bom-lines/{{bomLineId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "bom-lines",
+                    "{{bomLineId}}"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Analyze BOM",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/project-boms/{{bomId}}/analysis?groupBy=category",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "project-boms",
+                    "{{bomId}}",
+                    "analysis"
+                  ],
+                  "query": [
+                    {
+                      "key": "groupBy",
+                      "value": "category"
+                    }
+                  ]
+                },
+                "description": "groupBy = category | vendor | leadtime | procurement"
+              }
+            },
+            {
+              "name": "Transition: advance",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/project-boms/{{bomId}}/transition",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "project-boms",
+                    "{{bomId}}",
+                    "transition"
+                  ]
+                },
+                "description": "Draft→Technical→Commercial→Approved→Released. Role must match current stage.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"action\": \"advance\",\n  \"comment\": \"submitting for review\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Transition: reject",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/project-boms/{{bomId}}/transition",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "project-boms",
+                    "{{bomId}}",
+                    "transition"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"action\": \"reject\",\n  \"comment\": \"needs rework\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Delete BOM (Engineering, Draft)",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/project-boms/{{bomId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "project-boms",
+                    "{{bomId}}"
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Procurement",
+      "item": [
+        {
+          "name": "RFQ",
+          "item": [
+            {
+              "name": "Create RFQ from BOM (Purchase)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/rfqs",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "rfqs"
+                  ]
+                },
+                "description": "Provide from_bom_id to copy a released BOM's lines, OR a `lines` array for ad hoc items.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Fermenter valves & bearings\",\n  \"mode\": \"Vendor-wise\",\n  \"from_bom_id\": \"{{bomId}}\",\n  \"vendor_ids\": [\n    \"{{supplierId}}\"\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json().data;",
+                      "pm.collectionVariables.set('rfqId', data.id);",
+                      "if (data.lines && data.lines.length) pm.collectionVariables.set('rfqLineId', data.lines[0].id);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Create RFQ ad hoc (Purchase)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/rfqs",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "rfqs"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Ad hoc gaskets\",\n  \"mode\": \"Single Item\",\n  \"vendor_ids\": [\n    \"{{supplierId}}\"\n  ],\n  \"lines\": [\n    {\n      \"part_id\": \"{{partId}}\",\n      \"quantity\": 10,\n      \"specification\": \"PN16\",\n      \"buying_notes\": \"urgent\"\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "List RFQs",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/rfqs?search=&status=&page=1&pageSize=50",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "rfqs"
+                  ],
+                  "query": [
+                    {
+                      "key": "search",
+                      "value": ""
+                    },
+                    {
+                      "key": "status",
+                      "value": ""
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "pageSize",
+                      "value": "50"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Get RFQ (detail: lines + quotations)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/rfqs/{{rfqId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "rfqs",
+                    "{{rfqId}}"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Update RFQ (Purchase, Draft)",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/rfqs/{{rfqId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "rfqs",
+                    "{{rfqId}}"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Renamed RFQ\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Send RFQ (Purchase)",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/rfqs/{{rfqId}}/send",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "rfqs",
+                    "{{rfqId}}",
+                    "send"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Delete RFQ (Purchase, Draft)",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/rfqs/{{rfqId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "rfqs",
+                    "{{rfqId}}"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Quotations",
+          "item": [
+            {
+              "name": "Record quotation (Purchase)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/rfqs/{{rfqId}}/quotations",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "rfqs",
+                    "{{rfqId}}",
+                    "quotations"
+                  ]
+                },
+                "description": "RFQ must be Sent. One quotation per vendor. unit_price per rfq_line_id.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"vendor_id\": \"{{supplierId}}\",\n  \"lead_time_days\": 20,\n  \"payment_terms\": \"30 days\",\n  \"lines\": [\n    {\n      \"rfq_line_id\": \"{{rfqLineId}}\",\n      \"unit_price\": 1150\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const json = pm.response.json();",
+                      "const data = json.data || {};",
+                      "pm.collectionVariables.set(\"quotationId\", data.id);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "List quotations for RFQ",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/rfqs/{{rfqId}}/quotations",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "rfqs",
+                    "{{rfqId}}",
+                    "quotations"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Comparison (Purchase/Commercial)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/rfqs/{{rfqId}}/comparison",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "rfqs",
+                    "{{rfqId}}",
+                    "comparison"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json().data;",
+                      "if (data && data.recommended) pm.collectionVariables.set('quotationId', data.recommended.id);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Get quotation (detail)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/quotations/{{quotationId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "quotations",
+                    "{{quotationId}}"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Award quotation (Purchase/Commercial)",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/quotations/{{quotationId}}/award",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "quotations",
+                    "{{quotationId}}",
+                    "award"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Purchase Orders",
+          "item": [
+            {
+              "name": "Create PO from quotation (Purchase)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/purchase-orders",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "purchase-orders"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"from_quotation_id\": \"{{quotationId}}\",\n  \"priority\": \"High\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const data = pm.response.json().data;",
+                      "pm.collectionVariables.set('poId', data.id);",
+                      "if (data.lines && data.lines.length) pm.collectionVariables.set('poLineId', data.lines[0].id);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Create PO manual (Purchase)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/purchase-orders",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "purchase-orders"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"supplier_id\": \"{{supplierId}}\",\n  \"priority\": \"Medium\",\n  \"lines\": [\n    {\n      \"part_id\": \"{{partId}}\",\n      \"quantity\": 20,\n      \"unit_price\": 4800\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "List POs",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/purchase-orders?search=&status=&supplierId=&page=1&pageSize=50",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "purchase-orders"
+                  ],
+                  "query": [
+                    {
+                      "key": "search",
+                      "value": ""
+                    },
+                    {
+                      "key": "status",
+                      "value": ""
+                    },
+                    {
+                      "key": "supplierId",
+                      "value": ""
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "pageSize",
+                      "value": "50"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Get PO (detail: lines)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/purchase-orders/{{poId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "purchase-orders",
+                    "{{poId}}"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Set PO status: Open (Purchase)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/purchase-orders/{{poId}}/status",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "purchase-orders",
+                    "{{poId}}",
+                    "status"
+                  ]
+                },
+                "description": "Draft→Pending Approval→Open→Partially Received→Received→Closed; Cancelled from any non-terminal.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"Open\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Receive goods → stock (Purchase/Stores)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/purchase-orders/{{poId}}/receive",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "purchase-orders",
+                    "{{poId}}",
+                    "receive"
+                  ]
+                },
+                "description": "Pass warehouse_id to post accepted stock. Rejected qty is recorded but never enters inventory.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"warehouse_id\": \"{{warehouseId}}\",\n  \"lines\": [\n    {\n      \"po_line_id\": \"{{poLineId}}\",\n      \"received_qty\": 20,\n      \"rejected_qty\": 2\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Delete PO (Purchase, Draft/Cancelled)",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/purchase-orders/{{poId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "purchase-orders",
+                    "{{poId}}"
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Inventory",
+      "item": [
+        {
+          "name": "Warehouses",
+          "item": [
+            {
+              "name": "List warehouses",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/warehouses",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "warehouses"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const d=pm.response.json().data; if(d&&d.length) pm.collectionVariables.set('warehouseId', d[0].id);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Create warehouse (Stores)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/warehouses",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "warehouses"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"code\": \"WH-CUST\",\n  \"name\": \"Custom Store\",\n  \"type\": \"Distribution\",\n  \"city\": \"Pune\",\n  \"country\": \"India\",\n  \"capacity_pct\": 40\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const json = pm.response.json();",
+                      "const data = json.data || {};",
+                      "pm.collectionVariables.set(\"warehouseId\", data.id);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Get warehouse (+ stock summary)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/warehouses/{{warehouseId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "warehouses",
+                    "{{warehouseId}}"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Update warehouse (Stores)",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/warehouses/{{warehouseId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "warehouses",
+                    "{{warehouseId}}"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"capacity_pct\": 55\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Delete warehouse (Stores)",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/warehouses/{{warehouseId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "warehouses",
+                    "{{warehouseId}}"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Stock",
+          "item": [
+            {
+              "name": "List stock balances",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/inventory?search=&warehouseId=&partId=&status=&lowStock=&page=1&pageSize=50",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "inventory"
+                  ],
+                  "query": [
+                    {
+                      "key": "search",
+                      "value": ""
+                    },
+                    {
+                      "key": "warehouseId",
+                      "value": ""
+                    },
+                    {
+                      "key": "partId",
+                      "value": ""
+                    },
+                    {
+                      "key": "status",
+                      "value": ""
+                    },
+                    {
+                      "key": "lowStock",
+                      "value": ""
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "pageSize",
+                      "value": "50"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Stock movements (ledger)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/inventory/movements?partId=&warehouseId=&type=&page=1&pageSize=50",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "inventory",
+                    "movements"
+                  ],
+                  "query": [
+                    {
+                      "key": "partId",
+                      "value": ""
+                    },
+                    {
+                      "key": "warehouseId",
+                      "value": ""
+                    },
+                    {
+                      "key": "type",
+                      "value": ""
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "pageSize",
+                      "value": "50"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Low-stock alerts",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/inventory/alerts",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "inventory",
+                    "alerts"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Opening stock (Stores)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/inventory/opening",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "inventory",
+                    "opening"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"part_id\": \"{{partId}}\",\n  \"warehouse_id\": \"{{warehouseId}}\",\n  \"quantity\": 50,\n  \"unit_cost\": 1250.5,\n  \"reorder_point\": 10\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Adjust stock (Stores)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/inventory/adjust",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "inventory",
+                    "adjust"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"part_id\": \"{{partId}}\",\n  \"warehouse_id\": \"{{warehouseId}}\",\n  \"direction\": \"out\",\n  \"quantity\": 5,\n  \"wastage\": true,\n  \"note\": \"damaged\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Transfer stock (Stores)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/inventory/transfer",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "inventory",
+                    "transfer"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"part_id\": \"{{partId}}\",\n  \"from_warehouse_id\": \"{{warehouseId}}\",\n  \"to_warehouse_id\": \"{{warehouseId}}\",\n  \"quantity\": 1,\n  \"note\": \"set to two different warehouses\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6. Reports & Analytics",
+      "item": [
+        {
+          "name": "Dashboard KPIs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "dashboard"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Purchase value by status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/procurement/purchase-value",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "procurement",
+                "purchase-value"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Vendor performance",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/procurement/vendor-performance",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "procurement",
+                "vendor-performance"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Stock value by warehouse",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/inventory/stock-value",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "inventory",
+                "stock-value"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Vendor-wise spend",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/commercial/vendor-spend",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "commercial",
+                "vendor-spend"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Project cost",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/commercial/project-cost",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "commercial",
+                "project-cost"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

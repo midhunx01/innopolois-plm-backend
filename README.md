@@ -4,9 +4,9 @@ BOM & Procurement / PLM backend for **Innopolis Bio Innovations**. The
 Material Master is the single source of truth ("Engineering Data Backbone");
 Project BOM, Vendors, Procurement, Inventory and Reports build around it.
 
-Implements the Innopolis BOM FRD v1.0. **Modules 1–4** are implemented —
-Material Master (§3–6), Project BOM (§8–10), Vendor Database (§7) and
-Procurement (§11–14); the remaining modules follow the same layered pattern.
+Implements the Innopolis BOM FRD v1.0 — **all six modules**: Material Master
+(§3–6), Project BOM (§8–10), Vendor Database (§7), Procurement (§11–13),
+Inventory (§14) and Reports & Analytics (§15).
 
 ## Stack
 
@@ -140,8 +140,42 @@ RFQ (from released BOM or ad hoc) ──send──▶ Vendors submit Quotations
 - `GET /api/rfqs/:id` returns the RFQ with `lines` + `quotations`; comparison
   ranks cheapest = rank 1 / score 100.
 - A PO can be raised from an awarded quotation (`from_quotation_id`) or manually.
-  Receipt updates per-line `received_qty` + the PO `received_pct`; actual stock
-  posting lands with the Inventory module (FRD §14).
+  Receipt updates per-line `received_qty` + the PO `received_pct`, and posts
+  accepted goods into stock when a `warehouse_id` is supplied (see Inventory).
+
+## API — Module 5: Inventory
+
+| Method | Path | Roles |
+|--------|------|-------|
+| GET/POST/PATCH/DELETE | `/api/warehouses[/:id]` | read: any · write: Stores |
+| GET | `/api/inventory` | any (stock balances) |
+| GET | `/api/inventory/movements` | any (stock ledger) |
+| GET | `/api/inventory/alerts` | any (≤ reorder point) |
+| POST | `/api/inventory/opening` | Stores |
+| POST | `/api/inventory/adjust` | Stores (in/out, wastage) |
+| POST | `/api/inventory/transfer` | Stores (between warehouses) |
+
+- `stock_balances` holds on-hand per (material, warehouse); `stock_movements`
+  is the append-only ledger. Every posting keeps the Material Master's
+  `stock_qty` + `availability` in sync and recomputes `status`
+  (In Stock / Low Stock / Out of Stock vs reorder point).
+- **PO receipt → stock (FRD §14):** `POST /api/purchase-orders/:id/receive`
+  with `{warehouse_id, lines:[{po_line_id, received_qty, rejected_qty?}]}` posts
+  the accepted qty (received − rejected) as a `purchase` movement; rejected goods
+  are recorded but never enter available inventory.
+- `GET /api/warehouses/:id` returns the warehouse with a live stock summary
+  (sku count, stock value, low-stock items).
+
+## API — Module 6: Reports & Analytics
+
+| Method | Path | Returns |
+|--------|------|---------|
+| GET | `/api/reports/dashboard` | executive KPIs (counts, stock value, BOMs by stage) |
+| GET | `/api/reports/procurement/purchase-value` | PO count + value per status |
+| GET | `/api/reports/procurement/vendor-performance` | vendor ratings + actual PO spend |
+| GET | `/api/reports/inventory/stock-value` | stock value + SKUs per warehouse |
+| GET | `/api/reports/commercial/vendor-spend` | spend grouped by vendor |
+| GET | `/api/reports/commercial/project-cost` | rolled BOM cost per project |
 
 ## Demo logins (after `npm run seed`)
 

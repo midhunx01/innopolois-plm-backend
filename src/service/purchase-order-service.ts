@@ -14,9 +14,13 @@ import {
   QuotationLineRepoType,
   QuotationRepoType,
   RfqLineRepoType,
+  StockBalanceRepoType,
+  StockMovementRepoType,
   SupplierRepoType,
+  WarehouseRepoType,
 } from "../repository";
 import { ConflictError, NotFoundError, ValidationError } from "../util/error";
+import { postMovement } from "./inventory-service";
 
 export interface PurchaseOrderServiceDeps {
   poRepo: PurchaseOrderRepoType;
@@ -27,6 +31,10 @@ export interface PurchaseOrderServiceDeps {
   rfqLineRepo: RfqLineRepoType;
   partRepo: PartRepoType;
   counterRepo: CounterRepoType;
+  // Inventory wiring — goods receipt posts accepted stock (FRD §14).
+  stockBalanceRepo: StockBalanceRepoType;
+  stockMovementRepo: StockMovementRepoType;
+  warehouseRepo: WarehouseRepoType;
 }
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
@@ -198,6 +206,12 @@ const receive = async (
 
   const lines = await deps.poLineRepo.listByPo(id);
   const lineById = new Map(lines.map((l) => [l.id, l]));
+  const invDeps = {
+    stockBalanceRepo: deps.stockBalanceRepo,
+    stockMovementRepo: deps.stockMovementRepo,
+    warehouseRepo: deps.warehouseRepo,
+    partRepo: deps.partRepo,
+  };
 
   for (const r of dto.lines) {
     const line = lineById.get(r.po_line_id);
@@ -211,10 +225,38 @@ const receive = async (
         `received_qty for ${line.part_number} exceeds ordered quantity`
       );
     }
+    const rejected = r.rejected_qty ?? 0;
+    if (rejected > r.received_qty) {
+      throw new ValidationError(
+        `rejected_qty for ${line.part_number} exceeds received quantity`
+      );
+    }
     await deps.poLineRepo.update(line.id, {
       received_qty: r.received_qty.toString(),
     });
     line.received_qty = r.received_qty.toString(); // reflect for recompute below
+
+    // Post accepted goods into stock (FRD §14). Rejected qty is recorded on the
+    // movement but never increases on-hand.
+    if (dto.warehouse_id && r.received_qty > 0) {
+      const accepted = r.received_qty - rejected;
+      await postMovement(
+        {
+          part_id: line.part_id,
+          warehouse_id: dto.warehouse_id,
+          type: "purchase",
+          direction: "in",
+          quantity: accepted,
+          unit_cost: Number(line.unit_price),
+          inspection_status: accepted > 0 ? "Accepted" : "Rejected",
+          rejected_qty: rejected,
+          batch: r.batch ?? "",
+          reference: po.number,
+          reference_id: po.id,
+        },
+        invDeps
+      );
+    }
   }
 
   const totalQty = lines.reduce((s, l) => s + Number(l.quantity), 0);

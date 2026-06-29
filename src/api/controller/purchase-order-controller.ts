@@ -26,6 +26,9 @@ const deps: service.PurchaseOrderServiceDeps = {
   rfqLineRepo: repository.rfqLineRepo,
   partRepo: repository.partRepo,
   counterRepo: repository.counterRepo,
+  stockBalanceRepo: repository.stockBalanceRepo,
+  stockMovementRepo: repository.stockMovementRepo,
+  warehouseRepo: repository.warehouseRepo,
 };
 
 export const createPo = async (

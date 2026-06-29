@@ -79,6 +79,11 @@ export const UpdatePoStatusDto = Type.Object(
 
 export const ReceivePoDto = Type.Object(
   {
+    // Provide a warehouse to post accepted goods into stock (FRD §14). Omit to
+    // only record receipt quantities without affecting inventory.
+    warehouse_id: Type.Optional(
+      Type.String({ format: "uuid", errorMessage: { format: "warehouse_id must be a UUID" } })
+    ),
     lines: Type.Array(
       Type.Object(
         {
@@ -90,6 +95,9 @@ export const ReceivePoDto = Type.Object(
             minimum: 0,
             errorMessage: { minimum: "received_qty must be >= 0" },
           }),
+          // Rejected on inspection — counts as received but never enters stock.
+          rejected_qty: Type.Optional(Type.Number({ minimum: 0 })),
+          batch: Type.Optional(Type.String({ maxLength: 60 })),
         },
         { additionalProperties: false }
       ),

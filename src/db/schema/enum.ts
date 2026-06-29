@@ -141,3 +141,37 @@ export const poStatusEnum = pgEnum("po_status", [
   "Cancelled",
 ]);
 export type PoStatus = (typeof poStatusEnum.enumValues)[number];
+
+// ── Inventory (FRD §14, frontend `Warehouse`) ─────────────────────────────────
+export const warehouseTypeEnum = pgEnum("warehouse_type", [
+  "Distribution",
+  "Manufacturing",
+  "Buffer",
+  "Transit",
+]);
+export type WarehouseType = (typeof warehouseTypeEnum.enumValues)[number];
+
+// Append-only stock ledger movement types.
+export const stockMovementTypeEnum = pgEnum("stock_movement_type", [
+  "opening",
+  "purchase",
+  "sale_consumption",
+  "adjustment",
+  "wastage",
+  "transfer_in",
+  "transfer_out",
+]);
+export type StockMovementType =
+  (typeof stockMovementTypeEnum.enumValues)[number];
+
+export const stockDirectionEnum = pgEnum("stock_direction", ["in", "out"]);
+export type StockDirection = (typeof stockDirectionEnum.enumValues)[number];
+
+// Goods-receipt inspection (FRD §14 — rejected stock must not enter inventory).
+export const inspectionStatusEnum = pgEnum("inspection_status", [
+  "Pending",
+  "Accepted",
+  "Rejected",
+]);
+export type InspectionStatus =
+  (typeof inspectionStatusEnum.enumValues)[number];

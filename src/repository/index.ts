@@ -17,3 +17,7 @@ export * from "./quotation-repo";
 export * from "./quotation-line-repo";
 export * from "./purchase-order-repo";
 export * from "./po-line-repo";
+export * from "./warehouse-repo";
+export * from "./stock-balance-repo";
+export * from "./stock-movement-repo";
+export * from "./report-repo";

@@ -21,6 +21,9 @@ import { bomLineRoutes } from "./api/routes/bom-line-route";
 import { rfqRoutes } from "./api/routes/rfq-route";
 import { quotationRoutes } from "./api/routes/quotation-route";
 import { purchaseOrderRoutes } from "./api/routes/purchase-order-route";
+import { warehouseRoutes } from "./api/routes/warehouse-route";
+import { inventoryRoutes } from "./api/routes/inventory-route";
+import { reportRoutes } from "./api/routes/report-route";
 
 export const ExpressApp = async () => {
   const app = express();
@@ -29,6 +32,19 @@ export const ExpressApp = async () => {
   app.use(cors());
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
+
+  // Turn body-parser's malformed-JSON SyntaxError into a clean 400.
+  app.use(
+    (err: any, _req: Request, res: Response, next: NextFunction) => {
+      if (err?.type === "entity.parse.failed") {
+        return res
+          .status(400)
+          .json({ success: false, error: "Invalid JSON in request body" });
+      }
+      next(err);
+    }
+  );
+
   app.use(httpLogger);
 
   app.use("/health", (_req: Request, res: Response, _next: NextFunction) => {
@@ -56,6 +72,13 @@ export const ExpressApp = async () => {
   app.use("/api/rfqs", rfqRoutes);
   app.use("/api/quotations", quotationRoutes);
   app.use("/api/purchase-orders", purchaseOrderRoutes);
+
+  // ── Module 5: Inventory (FRD §14) ─────────────────────────────────────────
+  app.use("/api/warehouses", warehouseRoutes);
+  app.use("/api/inventory", inventoryRoutes);
+
+  // ── Module 6: Reports & Analytics (FRD §15) ───────────────────────────────
+  app.use("/api/reports", reportRoutes);
 
   app.use(HandleErrorWithLogger);
 

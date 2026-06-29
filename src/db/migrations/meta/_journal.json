@@ -29,6 +29,13 @@
       "when": 1782721029909,
       "tag": "0003_procurement",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1782722312611,
+      "tag": "0004_inventory",
+      "breakpoints": true
     }
   ]
 }

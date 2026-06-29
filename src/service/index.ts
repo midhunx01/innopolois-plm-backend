@@ -12,3 +12,6 @@ export * from "./bom-line-service";
 export * from "./rfq-service";
 export * from "./quotation-service";
 export * from "./purchase-order-service";
+export * from "./warehouse-service";
+export * from "./inventory-service";
+export * from "./report-service";

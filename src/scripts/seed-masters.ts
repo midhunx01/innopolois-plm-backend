@@ -18,7 +18,9 @@ import {
   supplierRepo,
   unitRepo,
   userRepo,
+  warehouseRepo,
 } from "../repository";
+import type { WarehouseType } from "../db/schema";
 import type { SupplierStatus } from "../db/schema";
 import type { Role } from "../db/schema";
 import { logger } from "../util";
@@ -152,6 +154,15 @@ const VENDORS: {
   { code: "V-LKVAL", name: "L&T Valves", country: "India", region: "Domestic", category: "Mechanical Bought-out", categories: ["Mechanical Bought-out", "Pipe Fittings"], tier: 1, status: "Approved", approved: true, contact: "G. Nair", email: "valves@lntvalves.com", phone: "+91 44 2249 2900", gst_vat: "33AAACL9012X1Z0", payment_terms: "30 days", lead_time_avg: 26, rating: 4.3, on_time_pct: 90.0, quality_pct: 95.5, risk_score: 23 },
 ];
 
+const WAREHOUSES: {
+  code: string; name: string; type: WarehouseType; city: string; country: string; capacity: number;
+}[] = [
+  { code: "WH-PUN", name: "Pune Central Store", type: "Distribution", city: "Pune", country: "India", capacity: 62 },
+  { code: "WH-FAB", name: "Fabrication Shop Store", type: "Manufacturing", city: "Pune", country: "India", capacity: 48 },
+  { code: "WH-MUM", name: "Mumbai Buffer Store", type: "Buffer", city: "Mumbai", country: "India", capacity: 35 },
+  { code: "WH-TRN", name: "Goods-in Transit", type: "Transit", city: "Pune", country: "India", capacity: 12 },
+];
+
 async function seed() {
   await connectToDatabase();
 
@@ -243,6 +254,21 @@ async function seed() {
       approved: v.approved,
     });
     logger.info(`Seeded vendor ${v.code} — ${v.name}`);
+  }
+
+  // Warehouses (FRD §14)
+  for (const w of WAREHOUSES) {
+    if (await warehouseRepo.findByCode(w.code)) continue;
+    await warehouseRepo.create({
+      id: uuidv7(),
+      code: w.code,
+      name: w.name,
+      type: w.type,
+      city: w.city,
+      country: w.country,
+      capacity_pct: w.capacity.toString(),
+    });
+    logger.info(`Seeded warehouse ${w.code} — ${w.name}`);
   }
 
   logger.info("Seed complete.");
