@@ -7,6 +7,7 @@ declare global {
         id: string;
         role: Role;
         email: string;
+        must_change?: boolean;
         iat?: number;
         exp?: number;
       };

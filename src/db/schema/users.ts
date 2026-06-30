@@ -27,6 +27,10 @@ export const users = pgTable(
     hue: smallint("hue").default(210).notNull(),
 
     is_active: boolean("is_active").default(true).notNull(),
+    // Forces a password change on next login (admin-created or admin-reset).
+    must_change_password: boolean("must_change_password")
+      .default(false)
+      .notNull(),
 
     created_at: timestamp("created_at", { withTimezone: true })
       .defaultNow()

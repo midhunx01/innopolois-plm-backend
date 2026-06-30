@@ -1,4 +1,5 @@
 export * from "./auth-service";
+export * from "./user-service";
 export * from "./material-category-service";
 export * from "./subtype-service";
 export * from "./major-spec-service";

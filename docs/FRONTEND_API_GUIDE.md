@@ -112,6 +112,48 @@ Store the token; send it on every request. It expires per `JWT_EXPIRES_IN` (defa
 ### `GET /api/auth/me`
 Returns the current user object (same shape as `data.user` above).
 
+### Password model — temporary password + forced first-login change
+
+There is **no routine self-service password change**. Passwords are admin-managed.
+A newly **created** user logs in with the password the admin set (no forced
+change). When an admin **resets** a password, it becomes temporary and the user
+must set their own password on next login.
+
+**`POST /api/auth/set-password`**  (authenticated, only while flagged)
+```json
+{ "current_password": "<the temporary password>", "new_password": "their-own-secret" }
+```
+Returns `{ token, user }` — a **fresh, unrestricted token** (use it going forward).
+Wrong temp → `401`. Calling it when the account is **not** flagged → `403`
+(“Password changes are managed by your administrator”).
+
+**The `must_change_password` flag & the gate.** `POST /api/auth/login` returns
+`data.must_change_password`. When `true`, the issued token is **restricted**:
+every endpoint **except** `/api/auth/login`, `/api/auth/set-password`,
+`/api/auth/me`, `/health` returns:
+```json
+{ "success": false, "error": "Password change required...", "code": "PASSWORD_CHANGE_REQUIRED" }
+```
+with HTTP `403`. **Frontend:** on login, if `must_change_password` is `true` (or
+on any `403` with `code: "PASSWORD_CHANGE_REQUIRED"`), route the user to a
+“set new password” screen and call `set-password`; then store the returned token
+and continue.
+
+### User management — `/api/users` (Administrator only)
+| Method | Path | Body / notes |
+|--------|------|--------------|
+| `POST` | `/api/users` | `{ name, email, password, role, team?, initials?, hue? }` — the user logs in with this `password` directly (**no** forced change on create); `initials` auto-derived |
+| `GET` | `/api/users` *(paginated)* | params: `search` (name/email), `role`, `page`, `pageSize` |
+| `GET` | `/api/users/:id` | one user |
+| `PATCH` | `/api/users/:id` | profile only: `name, email, role, team, hue, is_active` (**no password here**) |
+| `POST` | `/api/users/:id/reset-password` | `{ temporary_password? }` — sets a temp password + flags the user; if omitted, one is **generated and returned** as `data.temporary_password` (share it once) |
+| `DELETE` | `/api/users/:id` | deactivate (soft delete) — user can no longer log in |
+
+`role` ∈ Administrator · Engineering · Commercial · Purchase · Stores · Management.
+The **`password_hash` is never returned**. Guards (→ `400`): you can’t
+deactivate/delete **your own** account, and the **last active Administrator**
+can’t be demoted, deactivated, or deleted.
+
 **Demo logins** (after seeding): `admin@…/admin123`, `engineer@…/engineer123`,
 `commercial@…/commercial123`, `purchase@…/purchase123`, `stores@…/stores123`,
 `management@…/management123` (all `@innopolis.bio`).

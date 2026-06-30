@@ -8,6 +8,7 @@ export interface JwtPayload {
   id: string;
   role: Role;
   email: string;
+  must_change?: boolean; // restricted token — may only set a new password
   iat?: number;
   exp?: number;
 }

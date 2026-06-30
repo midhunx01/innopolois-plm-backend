@@ -5,6 +5,7 @@ import { AuthenticationError, ValidationError } from "../../util/error";
 import { ApiResponse } from "../../util/global/response";
 import { ValidateRequest } from "../../util/validator";
 import { LoginDto } from "../dto/auth-req-dto";
+import { SetPasswordDto } from "../dto/user-req-dto";
 
 const userRepo = repository.userRepo;
 const authService = service.authService;
@@ -29,6 +30,28 @@ export const me = async (req: Request, res: Response, next: NextFunction) => {
     if (!req.auth) throw new AuthenticationError("Authentication required");
     const result = await authService.me(req.auth.id, userRepo);
     ApiResponse.success(res, 200, "Current user", result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Forced first-login password change (only valid while flagged must_change).
+// Returns a fresh, unrestricted token on success.
+export const setPassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const validation = ValidateRequest(req.body, SetPasswordDto);
+    if (!validation.valid) throw new ValidationError(validation.error);
+    if (!req.auth) throw new AuthenticationError("Authentication required");
+    const result = await authService.setPassword(
+      req.auth.id,
+      validation.data,
+      userRepo
+    );
+    ApiResponse.success(res, 200, "Password updated", result);
   } catch (error) {
     next(error);
   }

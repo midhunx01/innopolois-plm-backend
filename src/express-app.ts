@@ -5,8 +5,11 @@ import express, {
   type Response,
 } from "express";
 import helmet from "helmet";
+import jwt from "jsonwebtoken";
+import { config } from "./config";
 import { HandleErrorWithLogger } from "./util/error/handler";
 import { authRoutes } from "./api/routes/auth-route";
+import { userRoutes } from "./api/routes/user-route";
 import { materialCategoryRoutes } from "./api/routes/material-category-route";
 import { subtypeRoutes } from "./api/routes/subtype-route";
 import { majorSpecRoutes } from "./api/routes/major-spec-route";
@@ -48,8 +51,42 @@ export const ExpressApp = async () => {
     res.status(200).json({ message: "OK" });
   });
 
-  // ── Module 1: Material Master (FRD §3–6) ──────────────────────────────────
+  // Password-change gate: a user holding a restricted (must_change) token may
+  // only reach the allow-listed paths until they set a new password. Everything
+  // else returns 403 PASSWORD_CHANGE_REQUIRED so the UI can force the change.
+  const PW_CHANGE_ALLOW = new Set([
+    "/api/auth/login",
+    "/api/auth/set-password",
+    "/api/auth/me",
+    "/health",
+  ]);
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    if (PW_CHANGE_ALLOW.has(req.path)) return next();
+    const header = req.headers.authorization;
+    if (!header || !header.startsWith("Bearer ")) return next();
+    try {
+      const decoded = jwt.verify(
+        header.slice("Bearer ".length).trim(),
+        config.auth.jwtSecret
+      ) as { must_change?: boolean };
+      if (decoded.must_change) {
+        return res.status(403).json({
+          success: false,
+          error: "Password change required. Set a new password to continue.",
+          code: "PASSWORD_CHANGE_REQUIRED",
+        });
+      }
+    } catch {
+      // Invalid/expired token — let the per-route authenticate produce the 401.
+    }
+    next();
+  });
+
+  // ── Auth + User management (FRD §17) ──────────────────────────────────────
   app.use("/api/auth", authRoutes);
+  app.use("/api/users", userRoutes);
+
+  // ── Module 1: Material Master (FRD §3–6) ──────────────────────────────────
   app.use("/api/material-categories", materialCategoryRoutes);
   app.use("/api/subtypes", subtypeRoutes);
   app.use("/api/major-specs", majorSpecRoutes);

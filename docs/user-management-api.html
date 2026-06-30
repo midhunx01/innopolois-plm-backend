@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Innopolis PLM — User Management & Auth API</title>
+<style>
+  :root{
+    --fg:#1c2330; --muted:#5b6675; --line:#e3e8ef; --bg:#ffffff;
+    --accent:#6d28d9; --accent-soft:#f3effd; --code-bg:#0f172a; --code-fg:#e2e8f0;
+    --green:#15803d; --green-bg:#e9f7ef; --amber:#92600a; --amber-bg:#fdf4e3;
+    --red:#b42318; --red-bg:#fdecea; --blue:#1d4ed8; --blue-bg:#eaf0fd;
+  }
+  *{box-sizing:border-box}
+  html{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  body{
+    font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--fg); background:var(--bg); margin:0; padding:0 28px 60px;
+    max-width:920px; margin:0 auto;
+  }
+  header{ padding:36px 0 18px; border-bottom:3px solid var(--accent); margin-bottom:8px; }
+  .eyebrow{ color:var(--accent); font-weight:700; letter-spacing:.08em; text-transform:uppercase; font-size:12px; }
+  h1{ font-size:30px; margin:6px 0 4px; letter-spacing:-.01em; }
+  .sub{ color:var(--muted); font-size:14px; }
+  h2{ font-size:20px; margin:34px 0 10px; padding-bottom:6px; border-bottom:1px solid var(--line); }
+  h3{ font-size:16px; margin:22px 0 6px; }
+  p{ margin:8px 0; }
+  code{ font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace; font-size:.88em;
+    background:var(--accent-soft); color:#4c1d95; padding:1px 6px; border-radius:5px; }
+  pre{ background:var(--code-bg); color:var(--code-fg); padding:14px 16px; border-radius:10px;
+    overflow:auto; font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace; font-size:12.5px; line-height:1.55; }
+  pre code{ background:none; color:inherit; padding:0; }
+  table{ border-collapse:collapse; width:100%; margin:12px 0; font-size:13.5px; }
+  th,td{ text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th{ background:#f7f8fb; font-weight:600; }
+  .pill{ display:inline-block; font-weight:700; font-size:11px; padding:2px 8px; border-radius:6px; letter-spacing:.03em; }
+  .get{ background:var(--green-bg); color:var(--green); }
+  .post{ background:var(--blue-bg); color:var(--blue); }
+  .patch{ background:var(--amber-bg); color:var(--amber); }
+  .delete{ background:var(--red-bg); color:var(--red); }
+  .endpoint{ border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin:14px 0; }
+  .endpoint .path{ font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace; font-size:14px; font-weight:600; margin-left:8px; }
+  .role{ float:right; font-size:12px; color:var(--muted); font-weight:600; }
+  .note{ background:var(--accent-soft); border-left:4px solid var(--accent); padding:10px 14px; border-radius:0 8px 8px 0; margin:12px 0; font-size:13.5px; }
+  .warn{ background:var(--amber-bg); border-left:4px solid var(--amber); padding:10px 14px; border-radius:0 8px 8px 0; margin:12px 0; font-size:13.5px; }
+  ul{ margin:8px 0; padding-left:22px; } li{ margin:3px 0; }
+  .muted{ color:var(--muted); } .small{ font-size:12.5px; }
+  footer{ margin-top:40px; padding-top:14px; border-top:1px solid var(--line); color:var(--muted); font-size:12px; }
+  @media print{
+    body{ padding:0 14px; } a{ color:inherit; text-decoration:none; }
+    .endpoint, pre, table{ break-inside:avoid; } h2{ break-after:avoid; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Innopolis PLM · Backend API</div>
+  <h1>Authentication &amp; User Management</h1>
+  <div class="sub">FRD §17 — Administrator manages users. Version 1.0 · Base URL <code>http://&lt;host&gt;:7100</code></div>
+</header>
+
+<h2>1. Conventions</h2>
+<p>All requests use JSON. Every endpoint except <code>POST /api/auth/login</code> requires a bearer token:</p>
+<pre><code>Authorization: Bearer &lt;jwt&gt;</code></pre>
+<p><strong>Response envelope</strong></p>
+<table>
+  <tr><th>Shape</th><th>Body</th></tr>
+  <tr><td>Success</td><td><code>{ "success": true, "message": "...", "data": { ... } }</code></td></tr>
+  <tr><td>Paginated</td><td><code>{ "success": true, "data": [ ... ], "meta": { page, pageSize, total, totalPages } }</code></td></tr>
+  <tr><td>Error</td><td><code>{ "success": false, "error": "message" }</code></td></tr>
+</table>
+<table>
+  <tr><th>Status</th><th>Meaning</th></tr>
+  <tr><td>200 / 201</td><td>OK / Created</td></tr>
+  <tr><td>400</td><td>Validation error (see <code>error</code>)</td></tr>
+  <tr><td>401</td><td>Missing / invalid / expired token, or wrong current password</td></tr>
+  <tr><td>403</td><td>Authenticated but not an Administrator</td></tr>
+  <tr><td>404</td><td>User not found</td></tr>
+  <tr><td>409</td><td>Email already in use</td></tr>
+</table>
+<div class="note"><strong>Tip:</strong> the <code>password_hash</code> is <strong>never</strong> returned by any endpoint. Numeric fields elsewhere in the API come back as JSON strings, but user fields here are plain types.</div>
+
+<h2>2. Roles</h2>
+<p>Six roles (the <code>role</code> field). <strong>Administrator</strong> bypasses all role checks.</p>
+<table>
+  <tr><th>Role</th><th>Responsibility</th></tr>
+  <tr><td><code>Administrator</code></td><td>Manage masters, users &amp; configuration — full access</td></tr>
+  <tr><td><code>Engineering</code></td><td>Create materials &amp; BOMs, submit for review</td></tr>
+  <tr><td><code>Commercial</code></td><td>Review pricing, commercial approval, quotation comparison</td></tr>
+  <tr><td><code>Purchase</code></td><td>Vendors, RFQs, purchase orders</td></tr>
+  <tr><td><code>Stores</code></td><td>Goods receipt, inventory, stock transfers</td></tr>
+  <tr><td><code>Management</code></td><td>Dashboards, reports, analytics</td></tr>
+</table>
+
+<h2>3. Authentication</h2>
+
+<div class="endpoint">
+  <span class="pill post">POST</span><span class="path">/api/auth/login</span><span class="role">public</span>
+  <p>Validates credentials and returns a JWT (HS256, default 12h expiry).</p>
+  <p><strong>Request</strong></p>
+  <pre><code>{ "email": "admin@innopolis.bio", "password": "admin123" }</code></pre>
+  <p><strong>Response 200</strong></p>
+  <pre><code>{
+  "success": true,
+  "message": "Login successful",
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "user": { "id": "uuid", "name": "Priya Nair", "email": "admin@innopolis.bio",
+              "role": "Administrator", "team": "Admin", "initials": "PN", "hue": 280 }
+  }
+}</code></pre>
+  <p class="small muted">Store the token; send it on every subsequent request. On <code>401</code>, redirect to login.</p>
+</div>
+
+<div class="endpoint">
+  <span class="pill get">GET</span><span class="path">/api/auth/me</span><span class="role">any authenticated</span>
+  <p>Returns the current user (same shape as <code>data.user</code> above).</p>
+</div>
+
+<div class="endpoint">
+  <span class="pill post">POST</span><span class="path">/api/auth/set-password</span><span class="role">authenticated · flagged only</span>
+  <p><strong>Forced first-login change.</strong> The user supplies the temporary password they were given plus their new password. This is the <em>only</em> way a user sets their own password — there is no routine self-service change.</p>
+  <p><strong>Request</strong></p>
+  <pre><code>{ "current_password": "&lt;the temporary password&gt;", "new_password": "their-own-secret" }</code></pre>
+  <p><strong>Response 200</strong></p>
+  <pre><code>{
+  "success": true, "message": "Password updated",
+  "data": {
+    "token": "eyJ...",                       // fresh, UNRESTRICTED token — use this now
+    "user": { "id": "uuid", "must_change_password": false, ... }
+  }
+}</code></pre>
+  <p class="small muted">Wrong temporary password → <code>401</code>. Called when the account is <strong>not</strong> flagged → <code>403</code> (“Password changes are managed by your administrator”).</p>
+</div>
+
+<div class="note">
+  <strong>The <code>must_change_password</code> flag &amp; the gate.</strong>
+  Login returns <code>data.must_change_password</code>. When <code>true</code>, the token is <strong>restricted</strong>: every endpoint except
+  <code>/api/auth/login</code>, <code>/api/auth/set-password</code>, <code>/api/auth/me</code>, <code>/health</code> returns HTTP <code>403</code> with
+  <code>{ "code": "PASSWORD_CHANGE_REQUIRED" }</code>. <strong>Frontend:</strong> on login, if the flag is <code>true</code> (or on any 403 with that code), send the user to a
+  “set new password” screen → call <code>set-password</code> → store the returned token and continue.
+</div>
+
+<h2>4. User Management <span class="muted small">(Administrator only)</span></h2>
+<p>All endpoints below require an <strong>Administrator</strong> token. A non-admin gets <code>403</code>.</p>
+
+<div class="endpoint">
+  <span class="pill post">POST</span><span class="path">/api/users</span><span class="role">Administrator</span>
+  <p>Create a user. The user logs in with the <code>password</code> you supply — <strong>no forced change on create</strong>. (To require a change, use reset-password below.) <code>initials</code> are auto-derived from the name if omitted.</p>
+  <p><strong>Request</strong></p>
+  <pre><code>{
+  "name": "Sara Khan",
+  "email": "sara@innopolis.bio",
+  "password": "Sara-2026!",          // the user's initial password (no forced change)
+  "role": "Purchase",                // one of the 6 roles
+  "team": "Procurement",             // optional
+  "initials": "SK",                  // optional (auto from name)
+  "hue": 210                          // optional avatar hue 0-360
+}</code></pre>
+  <p><strong>Response 201</strong></p>
+  <pre><code>{
+  "success": true, "message": "User created",
+  "data": { "id": "uuid", "name": "Sara Khan", "email": "sara@innopolis.bio",
+            "role": "Purchase", "team": "Procurement", "initials": "SK", "hue": 210,
+            "is_active": true, "created_at": "...", "updated_at": "..." }
+}</code></pre>
+  <p class="small muted">Required: <code>name</code>, <code>email</code>, <code>password</code>, <code>role</code>. Duplicate email → <code>409</code>.</p>
+</div>
+
+<div class="endpoint">
+  <span class="pill get">GET</span><span class="path">/api/users</span><span class="role">Administrator</span>
+  <p>Paginated list. Query params:</p>
+  <table>
+    <tr><th>Param</th><th>Notes</th></tr>
+    <tr><td><code>search</code></td><td>matches name or email</td></tr>
+    <tr><td><code>role</code></td><td>filter by exact role</td></tr>
+    <tr><td><code>page</code> / <code>pageSize</code></td><td>default 1 / 50 (max 200)</td></tr>
+  </table>
+  <pre><code>GET /api/users?role=Purchase&search=sara&page=1&pageSize=50</code></pre>
+  <p>Returns <code>data: [user]</code> + <code>meta: { page, pageSize, total, totalPages }</code>.</p>
+</div>
+
+<div class="endpoint">
+  <span class="pill get">GET</span><span class="path">/api/users/:id</span><span class="role">Administrator</span>
+  <p>Fetch a single user by id. <code>404</code> if not found.</p>
+</div>
+
+<div class="endpoint">
+  <span class="pill patch">PATCH</span><span class="path">/api/users/:id</span><span class="role">Administrator</span>
+  <p>Update profile fields only. <strong>Passwords are not set here</strong> — use reset-password below.</p>
+  <p><strong>Request (all optional)</strong></p>
+  <pre><code>{
+  "name": "Sara A. Khan",
+  "email": "sara.khan@innopolis.bio",   // re-checked for uniqueness
+  "role": "Stores",
+  "team": "Stores",
+  "hue": 152,
+  "is_active": false                     // deactivate without deleting
+}</code></pre>
+  <p><strong>Response 200</strong> — the updated, sanitized user.</p>
+</div>
+
+<div class="endpoint">
+  <span class="pill post">POST</span><span class="path">/api/users/:id/reset-password</span><span class="role">Administrator</span>
+  <p>Reset a user to a <strong>temporary password</strong> and flag them to change it at next login. Supply your own, or omit <code>temporary_password</code> to have one generated and returned.</p>
+  <p><strong>Request</strong> (body optional)</p>
+  <pre><code>{ "temporary_password": "Temp-2026!" }   // optional; omit to auto-generate</code></pre>
+  <p><strong>Response 200</strong></p>
+  <pre><code>{
+  "success": true, "message": "Temporary password set",
+  "data": {
+    "user_id": "uuid",
+    "temporary_password": "Tmp-9fK2aQ7p",   // shown ONCE — share it with the user
+    "message": "Temporary password set. Share it with the user; they must change it at next login."
+  }
+}</code></pre>
+  <p class="small muted">The reset replaces the old password — the user can no longer log in with it. They sign in with the temporary password, then are forced to <code>set-password</code>.</p>
+</div>
+
+<div class="endpoint">
+  <span class="pill delete">DELETE</span><span class="path">/api/users/:id</span><span class="role">Administrator</span>
+  <p>Soft-delete (deactivate). The user is retained in the database but <code>is_active</code> becomes false and they can no longer log in.</p>
+  <pre><code>{ "success": true, "message": "User deactivated", "data": { "message": "User deactivated successfully" } }</code></pre>
+</div>
+
+<h2>5. Safety guards</h2>
+<div class="warn">
+  These rules return <code>400</code> to prevent locking yourself or the organization out:
+  <ul>
+    <li>You <strong>cannot deactivate or delete your own account</strong>.</li>
+    <li>The <strong>last active Administrator</strong> cannot be demoted, deactivated, or deleted.</li>
+  </ul>
+</div>
+
+<h2>6. Field reference</h2>
+<table>
+  <tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+  <tr><td><code>id</code></td><td>string (uuid)</td><td>generated</td></tr>
+  <tr><td><code>name</code></td><td>string</td><td>1–120 chars</td></tr>
+  <tr><td><code>email</code></td><td>string</td><td>unique, lowercased, login identity</td></tr>
+  <tr><td><code>password</code></td><td>string</td><td>write-only, min 6 chars, bcrypt-hashed</td></tr>
+  <tr><td><code>role</code></td><td>enum</td><td>Administrator · Engineering · Commercial · Purchase · Stores · Management</td></tr>
+  <tr><td><code>team</code></td><td>string?</td><td>free text label</td></tr>
+  <tr><td><code>initials</code></td><td>string?</td><td>≤ 4 chars, auto-derived from name</td></tr>
+  <tr><td><code>hue</code></td><td>integer</td><td>0–360, avatar colour</td></tr>
+  <tr><td><code>is_active</code></td><td>boolean</td><td>false = cannot log in</td></tr>
+  <tr><td><code>must_change_password</code></td><td>boolean</td><td>true = restricted token until <code>set-password</code></td></tr>
+  <tr><td><code>created_at</code> / <code>updated_at</code></td><td>string (ISO)</td><td>timestamps</td></tr>
+</table>
+
+<h2>7. Typical flow</h2>
+<pre><code>1. Admin logs in            POST /api/auth/login                 (admin@innopolis.bio)
+2. Create the team          POST /api/users                      (set each person's password)
+   → user logs in directly with that password (no forced change)
+3. Forgot / rotate password POST /api/users/:id/reset-password   (admin issues a temporary password)
+   → user logs in           POST /api/auth/login                 (with temp → must_change_password:true)
+   → forced change          POST /api/auth/set-password          (temp + new → fresh token)
+4. Manage / audit           GET /api/users?role=...   PATCH /api/users/:id
+5. Off-boarding             DELETE /api/users/:id                (deactivate)</code></pre>
+
+<footer>
+  Innopolis Bio Innovations — PLM / BOM backend · Auth &amp; User Management API · generated for the frontend team.
+  See <strong>FRONTEND_API_GUIDE.md</strong> for the full module reference and <strong>Innopolis-PLM.postman_collection.json</strong> to try these requests.
+</footer>
+
+</body>
+</html>

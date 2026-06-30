@@ -63,6 +63,9 @@ e.g. `MB-VA-15-3040` = Mechanical Bought-out · Valve · 15 mm · SS 304.
 |--------|------|-------|
 | POST | `/api/auth/login` | public |
 | GET | `/api/auth/me` | any |
+| POST | `/api/auth/set-password` | any (forced first-login change) |
+| GET/POST/PATCH/DELETE | `/api/users[/:id]` | Administrator |
+| POST | `/api/users/:id/reset-password` | Administrator (temp password) |
 | GET/POST/PATCH/DELETE | `/api/material-categories[/:id]` | read: any · write: Administrator |
 | GET | `/api/material-categories/:categoryId/subtypes` | any |
 | POST/GET/PATCH/DELETE | `/api/subtypes[/:id]` | write: Administrator |
