@@ -1,0 +1,52 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: innopolois_plm_resource_db
+    restart: always
+    environment:
+      POSTGRES_USER: innopolois
+      POSTGRES_PASSWORD: e11dea74f93b169018009db29d433d4ce818dfb09c3ad945
+      POSTGRES_DB: innopolois_plm_resource_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - appnet
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: innopolois_pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@innopolois.com
+      PGADMIN_DEFAULT_PASSWORD: devuser@pass
+    ports:
+      - "127.0.0.1:5051:80"
+    depends_on:
+      - postgres
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    networks:
+      - appnet
+
+  innopolois-plm-server:
+    image: midhunx001/innopolois-plm-server:latest
+    container_name: innopolois_backend_dev
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+    ports:
+      - "127.0.0.1:5001:5001"
+    networks:
+      - appnet
+    volumes:
+      - ./logs:/app/logs
+
+volumes:
+  pgdata:
+  pgadmin-data:
+
+networks:
+  appnet:
+    driver: bridge

@@ -6,7 +6,6 @@ import express, {
 } from "express";
 import helmet from "helmet";
 import { HandleErrorWithLogger } from "./util/error/handler";
-import { httpLogger } from "./util/logger";
 import { authRoutes } from "./api/routes/auth-route";
 import { materialCategoryRoutes } from "./api/routes/material-category-route";
 import { subtypeRoutes } from "./api/routes/subtype-route";
@@ -44,8 +43,6 @@ export const ExpressApp = async () => {
       next(err);
     }
   );
-
-  app.use(httpLogger);
 
   app.use("/health", (_req: Request, res: Response, _next: NextFunction) => {
     res.status(200).json({ message: "OK" });
