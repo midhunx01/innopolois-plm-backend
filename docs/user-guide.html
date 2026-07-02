@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Innopolis PLM — User Guide</title>
+<style>
+  :root{
+    --fg:#1c2330; --muted:#5b6675; --line:#e3e8ef; --bg:#ffffff;
+    --accent:#6d28d9; --accent-soft:#f3effd; --code-bg:#0f172a; --code-fg:#e2e8f0;
+    --green:#15803d; --green-bg:#e9f7ef; --amber:#92600a; --amber-bg:#fdf4e3;
+    --red:#b42318; --red-bg:#fdecea; --blue:#1d4ed8; --blue-bg:#eaf0fd;
+  }
+  *{box-sizing:border-box}
+  html{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  body{
+    font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--fg); background:var(--bg); margin:0 auto; padding:0 28px 60px; max-width:920px;
+  }
+  header{ padding:40px 0 20px; border-bottom:3px solid var(--accent); margin-bottom:8px; }
+  .eyebrow{ color:var(--accent); font-weight:700; letter-spacing:.08em; text-transform:uppercase; font-size:12px; }
+  h1{ font-size:32px; margin:6px 0 6px; letter-spacing:-.01em; }
+  .sub{ color:var(--muted); font-size:14px; }
+  h2{ font-size:21px; margin:36px 0 10px; padding-bottom:6px; border-bottom:1px solid var(--line); }
+  h3{ font-size:16px; margin:22px 0 6px; }
+  h4{ font-size:14px; margin:16px 0 4px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+  p{ margin:8px 0; }
+  code{ font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace; font-size:.88em;
+    background:var(--accent-soft); color:#4c1d95; padding:1px 6px; border-radius:5px; }
+  table{ border-collapse:collapse; width:100%; margin:12px 0; font-size:13.5px; }
+  th,td{ text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th{ background:#f7f8fb; font-weight:600; }
+  ul,ol{ margin:8px 0; padding-left:22px; } li{ margin:4px 0; }
+  .muted{ color:var(--muted); } .small{ font-size:12.5px; }
+  .note{ background:var(--accent-soft); border-left:4px solid var(--accent); padding:10px 14px; border-radius:0 8px 8px 0; margin:12px 0; font-size:13.5px; }
+  .warn{ background:var(--amber-bg); border-left:4px solid var(--amber); padding:10px 14px; border-radius:0 8px 8px 0; margin:12px 0; font-size:13.5px; }
+  .tip{ background:var(--green-bg); border-left:4px solid var(--green); padding:10px 14px; border-radius:0 8px 8px 0; margin:12px 0; font-size:13.5px; }
+  .pill{ display:inline-block; font-weight:700; font-size:11px; padding:2px 8px; border-radius:6px; letter-spacing:.03em; background:var(--accent-soft); color:#4c1d95; }
+  .flow{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin:14px 0; font-size:13px; }
+  .flow .step{ background:#f7f8fb; border:1px solid var(--line); border-radius:8px; padding:6px 12px; font-weight:600; }
+  .flow .arrow{ color:var(--accent); font-weight:700; }
+  .toc{ columns:2; column-gap:32px; font-size:13.5px; }
+  .toc a{ color:var(--fg); text-decoration:none; }
+  .card{ border:1px solid var(--line); border-radius:12px; padding:4px 18px 14px; margin:14px 0; }
+  .big-code{ font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace; font-size:20px; font-weight:700;
+    background:var(--code-bg); color:#e2e8f0; padding:12px 18px; border-radius:10px; display:inline-block; letter-spacing:.06em; }
+  footer{ margin-top:44px; padding-top:14px; border-top:1px solid var(--line); color:var(--muted); font-size:12px; }
+  @page{ margin:14mm 12mm; }
+  @media print{
+    body{ padding:0; max-width:none; } a{ color:inherit; text-decoration:none; }
+    .card, table, .flow{ break-inside:avoid; } h2,h3{ break-after:avoid; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Innopolis Bio Innovations · PLM Platform</div>
+  <h1>User Guide</h1>
+  <div class="sub">Engineering Data Backbone — Material Master, BOM, Procurement, Inventory &amp; Reports · Version 1.0</div>
+</header>
+
+<div class="note">
+  This guide explains <strong>what the platform does and how your team uses it day to day</strong>. It is written for
+  everyone at Innopolis — engineers, purchase, stores, commercial and management. No technical knowledge is needed.
+</div>
+
+<h2 id="toc">Contents</h2>
+<div class="toc">
+  1. <a href="#intro">What is the PLM Platform?</a><br/>
+  2. <a href="#start">Getting Started &amp; Logging In</a><br/>
+  3. <a href="#roles">Roles — Who Does What</a><br/>
+  4. <a href="#code">The Material Code Explained</a><br/>
+  5. <a href="#master">Module 1 · Material Master</a><br/>
+  6. <a href="#bom">Module 2 · Project &amp; BOM</a><br/>
+  7. <a href="#vendor">Module 3 · Vendor Database</a><br/>
+  8. <a href="#procure">Module 4 · Procurement</a><br/>
+  9. <a href="#inventory">Module 5 · Inventory</a><br/>
+  10. <a href="#reports">Module 6 · Reports &amp; Analytics</a><br/>
+  11. <a href="#glossary">Glossary</a><br/>
+</div>
+
+<!-- ───────────────────────────── 1 ───────────────────────────── -->
+<h2 id="intro">1. What is the PLM Platform?</h2>
+<p>
+  The Innopolis PLM (Product Lifecycle Management) platform is the company's single, trusted source of engineering and
+  procurement data — the <strong>Engineering Data Backbone</strong>. Instead of materials, BOMs, vendor lists and purchase
+  records living in scattered spreadsheets, everything lives in one connected system where each piece of data is entered
+  once and reused everywhere.
+</p>
+<p>The platform follows a project from first enquiry all the way to delivered goods, across six connected modules:</p>
+<table>
+  <tr><th>#</th><th>Module</th><th>What it does</th></tr>
+  <tr><td>1</td><td><strong>Material Master</strong></td><td>The catalogue of every material, with an intelligent code. The foundation for everything else.</td></tr>
+  <tr><td>2</td><td><strong>Project &amp; BOM</strong></td><td>Bills of Materials for each project, with a formal review-and-approval workflow.</td></tr>
+  <tr><td>3</td><td><strong>Vendor Database</strong></td><td>Your approved suppliers and their details.</td></tr>
+  <tr><td>4</td><td><strong>Procurement</strong></td><td>Request for Quotation → compare quotes → Purchase Order → goods receipt.</td></tr>
+  <tr><td>5</td><td><strong>Inventory</strong></td><td>Live stock balances across warehouses, with low-stock alerts.</td></tr>
+  <tr><td>6</td><td><strong>Reports &amp; Analytics</strong></td><td>Dashboards for spend, vendor performance, stock value and project cost.</td></tr>
+</table>
+<div class="tip"><strong>Golden rule:</strong> data flows one way and is never re-typed. A material defined once in the Master
+  is picked into a BOM; the approved BOM feeds an RFQ; the winning quote becomes a Purchase Order; the received goods
+  update Inventory; and every step feeds the Reports. Enter it right once, and it stays right everywhere.</div>
+
+<!-- ───────────────────────────── 2 ───────────────────────────── -->
+<h2 id="start">2. Getting Started &amp; Logging In</h2>
+<ol>
+  <li><strong>Log in</strong> with the email and password given to you by your administrator.</li>
+  <li><strong>First-time login:</strong> if you were issued a temporary password, the system will require you to set a
+    new password before you can do anything else. This is a one-time security step.</li>
+  <li>Once logged in you'll see only the areas your role is allowed to use (see the next section).</li>
+</ol>
+<div class="warn"><strong>If you're asked to change your password and can't continue —</strong> that's expected. The
+  platform locks every other screen until a new password is set. Set it once and you're in.</div>
+<p class="small muted">Sessions expire after a period of inactivity for security; simply log in again if that happens.
+  Forgot your password? Your administrator can reset it for you — they cannot see your old one.</p>
+
+<!-- ───────────────────────────── 3 ───────────────────────────── -->
+<h2 id="roles">3. Roles — Who Does What</h2>
+<p>
+  Every user has one <strong>role</strong>. Your role decides what you can <em>view</em> and <em>change</em>. Everyone can
+  view the shared data they need; only the responsible role can create or modify it. The <strong>Administrator</strong>
+  can do everything.
+</p>
+<table>
+  <tr><th>Role</th><th>Responsible for</th><th>Can create / edit</th></tr>
+  <tr><td><strong>Administrator</strong></td><td>Users, configuration &amp; all master data</td><td>Everything</td></tr>
+  <tr><td><strong>Engineering</strong></td><td>Materials (parts), Projects &amp; BOMs</td><td>Parts, projects, BOMs and BOM lines; submits BOMs for review</td></tr>
+  <tr><td><strong>Commercial</strong></td><td>Commercial review of BOMs &amp; pricing</td><td>Approves BOMs at the commercial review stage</td></tr>
+  <tr><td><strong>Purchase</strong></td><td>Vendors &amp; buying</td><td>Suppliers, RFQs, Purchase Orders; releases approved BOMs to purchasing</td></tr>
+  <tr><td><strong>Stores</strong></td><td>Warehouses &amp; stock</td><td>Warehouses, stock adjustments &amp; transfers, goods receipt</td></tr>
+  <tr><td><strong>Management</strong></td><td>Oversight</td><td>Views dashboards, reports &amp; analytics</td></tr>
+</table>
+<p class="small muted">The classification data that underpins the codes (categories, subtypes, specifications, grades and
+  units) is maintained by the Administrator so the coding scheme stays consistent company-wide.</p>
+
+<!-- ───────────────────────────── 4 ───────────────────────────── -->
+<h2 id="code">4. The Material Code Explained</h2>
+<p>
+  Every material carries an <strong>intelligent code</strong> — a code that tells you what the item <em>is</em> just by
+  reading it. The code has four parts, each drawn from a controlled list:
+</p>
+<p style="text-align:center; margin:18px 0;"><span class="big-code">TT&nbsp;-&nbsp;SS&nbsp;-&nbsp;MM&nbsp;-&nbsp;DDDD</span></p>
+<table>
+  <tr><th>Segment</th><th>Means</th><th>Example</th></tr>
+  <tr><td><code>TT</code></td><td><strong>Type</strong> — the top-level category (Material Category)</td><td>Fasteners</td></tr>
+  <tr><td><code>SS</code></td><td><strong>Subtype</strong> — a subdivision of the type</td><td>Bolts</td></tr>
+  <tr><td><code>MM</code></td><td><strong>Major Spec</strong> — the primary specification</td><td>M10</td></tr>
+  <tr><td><code>DDDD</code></td><td><strong>Detail Spec</strong> — the finer detail that makes the item unique</td><td>×50mm A2</td></tr>
+</table>
+<p>
+  Because every segment comes from a maintained master list, codes are consistent, searchable and never duplicated.
+  This is why the <strong>Material Master must be set up first</strong> — it defines the building blocks for every code.
+</p>
+
+<!-- ───────────────────────────── 5 ───────────────────────────── -->
+<h2 id="master">5. Module 1 · Material Master</h2>
+<p>The Material Master is the catalogue at the heart of the platform. It is built in layers, from broad classification
+  down to the individual material.</p>
+
+<h3>The building blocks</h3>
+<table>
+  <tr><th>Item</th><th>What it is</th><th>Maintained by</th></tr>
+  <tr><td><strong>Category</strong> (Material Type)</td><td>Top-level classification — the <code>TT</code> in the code (e.g. Fasteners, Raw Metal). Each carries a default unit of measure.</td><td>Administrator</td></tr>
+  <tr><td><strong>Subtype</strong></td><td>A subdivision of a category — the <code>SS</code> (e.g. Bolts under Fasteners).</td><td>Administrator</td></tr>
+  <tr><td><strong>Major Spec</strong></td><td>Primary specification — the <code>MM</code> (e.g. thread size, material grade).</td><td>Administrator</td></tr>
+  <tr><td><strong>Grade</strong></td><td>Material grade / quality reference used on parts.</td><td>Administrator</td></tr>
+  <tr><td><strong>Unit</strong></td><td>Units of measure (Nos, kg, m, …) used across the system.</td><td>Administrator</td></tr>
+  <tr><td><strong>Part (Material)</strong></td><td>The actual catalogued material, with its intelligent code, specs, grade, unit, sourcing (Make / Buy / Standard) and lifecycle.</td><td>Engineering</td></tr>
+</table>
+
+<h3>Category Management (worked example)</h3>
+<p>Categories are the first thing set up because they anchor the whole coding scheme. For each category the administrator records:</p>
+<ul>
+  <li><strong>Name</strong> — e.g. "Fasteners" (must be unique).</li>
+  <li><strong>Type code</strong> — the short <code>TT</code> code, e.g. "FS" (must be unique; stored in capitals).</li>
+  <li><strong>Default unit of measure</strong> — the unit new materials in this category start with (e.g. "Nos").</li>
+  <li><strong>Active / Inactive</strong> — inactive categories stay in the records but are hidden from new-material forms.</li>
+</ul>
+<div class="tip"><strong>Retiring vs deleting:</strong> to stop a category from being used going forward, set it to
+  <em>Inactive</em> rather than deleting it. That keeps all history intact while removing it from selection lists.
+  Deletions are "soft" — the record is hidden, never truly erased.</div>
+<div class="warn"><strong>Names and codes must be unique.</strong> If you try to reuse a name or type code that already
+  exists, the system will stop you so the catalogue stays clean.</div>
+
+<h3>Parts — the materials themselves</h3>
+<p>A <strong>Part</strong> is a real, orderable material. Engineering creates parts by combining the building blocks
+  above; the system assembles the intelligent code automatically. Each part also records its <strong>lifecycle</strong>
+  stage — Concept → In Design → In Review → Released → Production → Obsolete — so everyone knows whether a material is
+  ready to be used in production.</p>
+
+<!-- ───────────────────────────── 6 ───────────────────────────── -->
+<h2 id="bom">6. Module 2 · Project &amp; BOM</h2>
+<p>
+  A <strong>Project</strong> represents a customer job and moves through its own lifecycle (Enquiry → Technical Evaluation
+  → Quotation → Project Order → Detailed Engineering → Final BOM → Purchase Release → Procurement → Fulfilment →
+  Completed). Projects and BOMs are numbered automatically (for example <code>INP-2026-001</code>).
+</p>
+<p>
+  A <strong>BOM (Bill of Materials)</strong> is the structured list of every material and quantity needed to build the
+  project's product. Engineering builds the BOM by adding <strong>lines</strong>, each pulling a material straight from
+  the Master (so specs, unit and cost come across automatically). The platform continuously rolls up totals — total
+  value, number of unique materials, count of critical items and long-lead items — as lines are added.
+</p>
+
+<h3>The BOM approval workflow</h3>
+<p>A BOM cannot go straight from an engineer's desk to purchasing. It passes through a controlled, auditable approval flow:</p>
+<div class="flow">
+  <span class="step">Draft</span><span class="arrow">→</span>
+  <span class="step">Technical Review</span><span class="arrow">→</span>
+  <span class="step">Commercial Review</span><span class="arrow">→</span>
+  <span class="step">Approved</span><span class="arrow">→</span>
+  <span class="step">Released for Purchase</span>
+</div>
+<table>
+  <tr><th>Stage</th><th>What happens</th><th>Who advances it</th></tr>
+  <tr><td><strong>Draft</strong></td><td>Engineering builds and edits the BOM lines. This is the <em>only</em> stage where lines can be changed.</td><td>Engineering</td></tr>
+  <tr><td><strong>Technical Review</strong></td><td>The technical content is checked.</td><td>Engineering</td></tr>
+  <tr><td><strong>Commercial Review</strong></td><td>Pricing and commercial aspects are checked.</td><td>Commercial</td></tr>
+  <tr><td><strong>Approved</strong></td><td>The BOM is signed off and ready to be released.</td><td>Purchase (releases it)</td></tr>
+  <tr><td><strong>Released for Purchase</strong></td><td>Locked and handed to Procurement. This stage is final.</td><td>—</td></tr>
+</table>
+<ul>
+  <li><strong>Advancing</strong> moves the BOM to the next stage. <strong>Rejecting</strong> a review sends it back to Draft for rework.</li>
+  <li>A BOM with no lines cannot leave Draft, and a Released BOM can no longer be edited.</li>
+  <li>Every transition is recorded in an <strong>audit trail</strong> — who moved it, when, and to which stage.</li>
+</ul>
+<div class="note"><strong>BOM analysis:</strong> at any point you can analyse a BOM's cost broken down by category,
+  vendor, lead time or make-vs-buy — useful for planning procurement and spotting long-lead or high-cost items early.</div>
+
+<!-- ───────────────────────────── 7 ───────────────────────────── -->
+<h2 id="vendor">7. Module 3 · Vendor Database</h2>
+<p>The Vendor Database is the Purchase team's list of approved suppliers. Each supplier record holds contact and
+  commercial details plus an approval <strong>status</strong>:</p>
+<table>
+  <tr><th>Status</th><th>Meaning</th></tr>
+  <tr><td><strong>Preferred</strong></td><td>First-choice supplier.</td></tr>
+  <tr><td><strong>Approved</strong></td><td>Cleared for use.</td></tr>
+  <tr><td><strong>Conditional</strong></td><td>Usable with conditions / caution.</td></tr>
+  <tr><td><strong>Under Review</strong></td><td>Being evaluated — not yet cleared.</td></tr>
+</table>
+<p>Suppliers are linked to materials and to quotations, so the platform can later report on how much you spend with each
+  vendor and how they perform on delivery.</p>
+
+<!-- ───────────────────────────── 8 ───────────────────────────── -->
+<h2 id="procure">8. Module 4 · Procurement</h2>
+<p>Procurement turns an approved BOM into actual purchased goods, through a clear four-step flow:</p>
+<div class="flow">
+  <span class="step">RFQ</span><span class="arrow">→</span>
+  <span class="step">Quotations</span><span class="arrow">→</span>
+  <span class="step">Purchase Order</span><span class="arrow">→</span>
+  <span class="step">Goods Receipt</span>
+</div>
+
+<h3>Step 1 · Request for Quotation (RFQ)</h3>
+<p>Purchase raises an <strong>RFQ</strong> — often generated directly from a released BOM, so the items and quantities
+  come across automatically. RFQs can be organised different ways (vendor-wise, category-wise, package-wise, single item
+  or bulk). The RFQ starts as <em>Draft</em>, then is <em>Sent</em> to vendors.</p>
+
+<h3>Step 2 · Quotations &amp; comparison</h3>
+<p>Vendors submit <strong>quotations</strong> with per-line pricing (one quotation per vendor). As quotes arrive the RFQ
+  moves to <em>Quotes In</em>. The platform then <strong>compares</strong> them and ranks the offers — the cheapest gets
+  rank 1 — so the buyer can make an objective decision. The buyer <strong>awards</strong> the winning quotation; the
+  winner is marked <em>Awarded</em> and the rest <em>Rejected</em> automatically.</p>
+
+<h3>Step 3 · Purchase Order (PO)</h3>
+<p>The awarded quotation becomes a <strong>Purchase Order</strong> (POs are auto-numbered). A PO moves through its own
+  status lifecycle:</p>
+<div class="flow">
+  <span class="step">Draft</span><span class="arrow">→</span>
+  <span class="step">Pending Approval</span><span class="arrow">→</span>
+  <span class="step">Open</span><span class="arrow">→</span>
+  <span class="step">Partially Received</span><span class="arrow">→</span>
+  <span class="step">Received</span><span class="arrow">→</span>
+  <span class="step">Closed</span>
+</div>
+<p class="small muted">A PO can also be <strong>Cancelled</strong>. Line totals (quantity × unit price) are calculated for you.</p>
+
+<h3>Step 4 · Goods Receipt</h3>
+<p>When goods arrive, Stores (or Purchase) records a <strong>receipt</strong> against the PO, entering how much was
+  received and how much was accepted vs rejected after inspection. The PO updates to <em>Partially Received</em> or
+  <em>Received</em> accordingly.</p>
+<div class="warn"><strong>Rejected goods never enter stock.</strong> Only accepted quantities are posted to inventory,
+  keeping your stock figures trustworthy. When a receiving warehouse is specified, accepted goods flow straight into
+  Inventory automatically.</div>
+
+<!-- ───────────────────────────── 9 ───────────────────────────── -->
+<h2 id="inventory">9. Module 5 · Inventory</h2>
+<p>Inventory tracks how much of each material you hold, and where. Stock is held across <strong>warehouses</strong>
+  (Distribution, Manufacturing, Buffer or Transit) and every change is written to a permanent <strong>stock ledger</strong>
+  — an append-only history you can always audit.</p>
+<h4>What Stores can do</h4>
+<ul>
+  <li><strong>Opening stock</strong> — record the starting quantity of a material.</li>
+  <li><strong>Adjust</strong> — correct a balance (e.g. after a physical count) or record wastage.</li>
+  <li><strong>Transfer</strong> — move stock from one warehouse to another.</li>
+  <li><strong>Receive</strong> — accepted goods from a PO arrive as stock automatically.</li>
+</ul>
+<h4>What everyone can see</h4>
+<ul>
+  <li><strong>Stock balances</strong> — current quantity of every material by warehouse.</li>
+  <li><strong>Movements</strong> — the full history of ins and outs.</li>
+  <li><strong>Low-stock alerts</strong> — materials at or below their reorder point, so you can replenish in time.</li>
+</ul>
+<p class="small muted">Each material's availability is kept in step automatically — <em>In Stock</em>, <em>Low Stock</em> or
+  <em>Out of Stock</em> — based on its quantity and reorder point.</p>
+
+<!-- ───────────────────────────── 10 ───────────────────────────── -->
+<h2 id="reports">10. Module 6 · Reports &amp; Analytics</h2>
+<p>The Reports module turns everyday activity into insight. Management and other roles can view:</p>
+<table>
+  <tr><th>Report</th><th>Answers the question…</th></tr>
+  <tr><td><strong>Dashboard</strong></td><td>What's the overall health of projects, procurement and stock right now?</td></tr>
+  <tr><td><strong>Purchase value</strong></td><td>How much are we purchasing, over time?</td></tr>
+  <tr><td><strong>Vendor performance</strong></td><td>Which suppliers deliver well?</td></tr>
+  <tr><td><strong>Stock value</strong></td><td>How much money is tied up in inventory?</td></tr>
+  <tr><td><strong>Vendor spend</strong></td><td>How much do we spend with each vendor?</td></tr>
+  <tr><td><strong>Project cost</strong></td><td>What is each project costing us?</td></tr>
+</table>
+<p>Because every module feeds the same data backbone, these reports are always based on live, consistent figures — no
+  manual consolidation required.</p>
+
+<!-- ───────────────────────────── 11 ───────────────────────────── -->
+<h2 id="glossary">11. Glossary</h2>
+<table>
+  <tr><th>Term</th><th>Meaning</th></tr>
+  <tr><td><strong>PLM</strong></td><td>Product Lifecycle Management — managing product data from concept to delivery.</td></tr>
+  <tr><td><strong>Material Master</strong></td><td>The central catalogue of all materials and their classification.</td></tr>
+  <tr><td><strong>Intelligent code</strong></td><td>The <code>TT-SS-MM-DDDD</code> code that describes a material at a glance.</td></tr>
+  <tr><td><strong>Part</strong></td><td>An individual catalogued material.</td></tr>
+  <tr><td><strong>BOM</strong></td><td>Bill of Materials — the list of items and quantities to build a product.</td></tr>
+  <tr><td><strong>Lifecycle</strong></td><td>The stages a material or project passes through over its life.</td></tr>
+  <tr><td><strong>RFQ</strong></td><td>Request for Quotation — asking vendors to quote prices.</td></tr>
+  <tr><td><strong>Quotation</strong></td><td>A vendor's priced offer in response to an RFQ.</td></tr>
+  <tr><td><strong>PO</strong></td><td>Purchase Order — a formal order placed with a vendor.</td></tr>
+  <tr><td><strong>Goods receipt</strong></td><td>Recording items physically received against a PO.</td></tr>
+  <tr><td><strong>Reorder point</strong></td><td>The stock level at which a material should be replenished.</td></tr>
+  <tr><td><strong>Soft delete</strong></td><td>Hiding a record from view while keeping it in the database for history.</td></tr>
+  <tr><td><strong>Audit trail</strong></td><td>A permanent record of who changed what, and when.</td></tr>
+</table>
+
+<footer>
+  Innopolis Bio Innovations · PLM Platform User Guide · Version 1.0 ·
+  This document describes platform capabilities and workflows for end users.
+</footer>
+
+</body>
+</html>

@@ -5,12 +5,14 @@ services:
     restart: always
     environment:
       POSTGRES_USER: innopolois
-      POSTGRES_PASSWORD: e11dea74f93b169018009db29d433d4ce818dfb09c3ad945
+      POSTGRES_PASSWORD: e11dea74f93bhh018009db29d4ggvce818dfb09c3ad945
       POSTGRES_DB: innopolois_plm_resource_db
+    ports:
+      - "127.0.0.1:5434:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     networks:
-      - appnet
+      - innopolois-net
 
   pgadmin:
     image: dpage/pgadmin4
@@ -26,7 +28,7 @@ services:
     volumes:
       - pgadmin-data:/var/lib/pgadmin
     networks:
-      - appnet
+      - innopolois-net
 
   innopolois-plm-server:
     image: midhunx001/innopolois-plm-server:latest
@@ -37,9 +39,9 @@ services:
     depends_on:
       - postgres
     ports:
-      - "127.0.0.1:5001:5001"
+      - "7100:7100"
     networks:
-      - appnet
+      - innopolois-net
     volumes:
       - ./logs:/app/logs
 
@@ -48,5 +50,5 @@ volumes:
   pgadmin-data:
 
 networks:
-  appnet:
+  innopolois-net:
     driver: bridge
