@@ -69,8 +69,15 @@ export const CreatePartDto = Type.Object(
     unit_cost: Type.Optional(Type.Number({ minimum: 0 })),
     last_purchase_price: Type.Optional(Type.Number({ minimum: 0 })),
     lead_time_days: Type.Optional(Type.Integer({ minimum: 0 })),
-    supplier_id: Type.Optional(
-      Type.String({ format: "uuid", errorMessage: { format: "supplier_id must be a UUID" } })
+    // Preferred vendors (Vendor Master). A material may have several.
+    vendor_ids: Type.Optional(
+      Type.Array(
+        Type.String({
+          format: "uuid",
+          errorMessage: { format: "each vendor_id must be a UUID" },
+        }),
+        { errorMessage: { type: "vendor_ids must be an array of UUIDs" } }
+      )
     ),
     manufacturer_part_number: Type.Optional(Type.String({ maxLength: 120 })),
     make: Type.Optional(Type.String({ maxLength: 120 })),

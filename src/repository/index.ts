@@ -6,6 +6,7 @@ export * from "./grade-repo";
 export * from "./unit-repo";
 export * from "./supplier-repo";
 export * from "./part-repo";
+export * from "./part-vendor-repo";
 export * from "./counter-repo";
 export * from "./project-repo";
 export * from "./project-bom-repo";

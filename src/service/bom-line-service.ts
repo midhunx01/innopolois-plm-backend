@@ -7,6 +7,7 @@ import { NewBomLine } from "../db/schema";
 import {
   BomLineRepoType,
   PartRepoType,
+  PartVendorRepoType,
   ProjectBomRepoType,
   SupplierRepoType,
 } from "../repository";
@@ -17,6 +18,7 @@ export interface BomLineServiceDeps {
   bomLineRepo: BomLineRepoType;
   projectBomRepo: ProjectBomRepoType;
   partRepo: PartRepoType;
+  partVendorRepo: PartVendorRepoType;
   supplierRepo: SupplierRepoType;
 }
 
@@ -54,6 +56,12 @@ const add = async (
   const extended = round2(dto.quantity * unitCost);
   const findNumber = (await deps.bomLineRepo.maxFindNumber(bomId)) + 1;
 
+  // Default the line vendor to the material's first preferred vendor when the
+  // caller doesn't pick one explicitly.
+  const preferredVendorIds = await deps.partVendorRepo.listVendorIdsByPart(
+    part.id
+  );
+
   const newLine: NewBomLine = {
     id: uuidv7(),
     bom_id: bomId,
@@ -80,7 +88,7 @@ const add = async (
     remarks: dto.remarks ?? "",
     buying_notes: dto.buying_notes ?? "",
     drawing_ref: dto.drawing_ref ?? part.drawing_ref,
-    vendor_id: dto.vendor_id ?? part.supplier_id ?? null,
+    vendor_id: dto.vendor_id ?? preferredVendorIds[0] ?? null,
     is_critical: dto.is_critical ?? false,
   };
 

@@ -13,6 +13,7 @@ const deps: service.BomLineServiceDeps = {
   bomLineRepo: repository.bomLineRepo,
   projectBomRepo: repository.projectBomRepo,
   partRepo: repository.partRepo,
+  partVendorRepo: repository.partVendorRepo,
   supplierRepo: repository.supplierRepo,
 };
 

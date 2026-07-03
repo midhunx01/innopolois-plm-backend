@@ -1,4 +1,14 @@
-import { and, desc, eq, ilike, isNull, or, sql, SQL } from "drizzle-orm";
+import {
+  and,
+  desc,
+  eq,
+  getTableColumns,
+  ilike,
+  isNull,
+  or,
+  sql,
+  SQL,
+} from "drizzle-orm";
 import { DB } from "../db/db-connection";
 import {
   Availability,
@@ -7,8 +17,17 @@ import {
   Part,
   SourcingType,
   parts,
+  users,
 } from "../db/schema";
 import { logger } from "../util";
+
+// Part enriched with the owner's display fields, so any role viewing the part
+// can see the owner without the admin-only users list.
+export type PartWithOwner = Part & {
+  owner_name: string | null;
+  owner_initials: string | null;
+  owner_hue: number | null;
+};
 
 export interface PartFilters {
   search?: string; // code / name / description / drawing / make
@@ -23,7 +42,7 @@ export interface PartFilters {
 
 export type PartRepoType = {
   create: (data: NewPart) => Promise<Part | null>;
-  findById: (id: string) => Promise<Part | null>;
+  findById: (id: string) => Promise<PartWithOwner | null>;
   findByPartNumber: (partNumber: string) => Promise<Part | null>;
   list: (filters: PartFilters) => Promise<{ rows: Part[]; total: number }>;
   update: (id: string, data: Partial<NewPart>) => Promise<Part | null>;
@@ -65,11 +84,17 @@ const create = async (data: NewPart): Promise<Part | null> => {
   }
 };
 
-const findById = async (id: string): Promise<Part | null> => {
+const findById = async (id: string): Promise<PartWithOwner | null> => {
   try {
     const [row] = await DB
-      .select()
+      .select({
+        ...getTableColumns(parts),
+        owner_name: users.name,
+        owner_initials: users.initials,
+        owner_hue: users.hue,
+      })
       .from(parts)
+      .leftJoin(users, eq(users.id, parts.owner_id))
       .where(and(eq(parts.id, id), isNull(parts.deleted_at)))
       .limit(1);
     return row ?? null;

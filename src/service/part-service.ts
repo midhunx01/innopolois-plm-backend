@@ -7,6 +7,7 @@ import {
   MaterialCategoryRepoType,
   PartFilters,
   PartRepoType,
+  PartVendorRepoType,
   SubtypeRepoType,
   SupplierRepoType,
 } from "../repository";
@@ -15,6 +16,7 @@ import { buildMaterialCode } from "../util/helper/material-code";
 
 export interface PartServiceDeps {
   partRepo: PartRepoType;
+  partVendorRepo: PartVendorRepoType;
   categoryRepo: MaterialCategoryRepoType;
   subtypeRepo: SubtypeRepoType;
   majorSpecRepo: MajorSpecRepoType;
@@ -24,6 +26,19 @@ export interface PartServiceDeps {
 
 const num = (v: number | undefined, fallback = "0"): string =>
   v === undefined ? fallback : v.toString();
+
+// Verify every supplied vendor id exists; throws on the first miss.
+const assertVendorsExist = async (
+  vendorIds: string[],
+  deps: PartServiceDeps
+): Promise<void> => {
+  for (const id of new Set(vendorIds)) {
+    const vendor = await deps.supplierRepo.findById(id);
+    if (!vendor) {
+      throw new ValidationError(`vendor_id "${id}" does not exist`);
+    }
+  }
+};
 
 const create = async (
   dto: CreatePartDtoType,
@@ -54,10 +69,8 @@ const create = async (
     detailSpecCode = g.code;
   }
 
-  if (dto.supplier_id) {
-    const supplier = await deps.supplierRepo.findById(dto.supplier_id);
-    if (!supplier) throw new ValidationError("supplier_id does not exist");
-  }
+  const vendorIds = dto.vendor_ids ?? [];
+  await assertVendorsExist(vendorIds, deps);
 
   // 2. Build the intelligent material code TT-SS-MM-DDDD (FRD §4).
   const partNumber = buildMaterialCode(
@@ -102,7 +115,6 @@ const create = async (
     unit_cost: num(dto.unit_cost),
     last_purchase_price: num(dto.last_purchase_price),
     lead_time_days: dto.lead_time_days ?? 0,
-    supplier_id: dto.supplier_id ?? null,
     manufacturer_part_number: dto.manufacturer_part_number ?? "",
     make: dto.make ?? "",
     model: dto.model ?? "",
@@ -124,16 +136,24 @@ const create = async (
 
   const created = await deps.partRepo.create(newPart);
   if (!created) throw new ValidationError("Failed to create material");
-  return created;
+
+  await deps.partVendorRepo.setForPart(created.id, vendorIds);
+  const preferred_vendors = await deps.partVendorRepo.listByPart(created.id);
+  return { ...created, vendor_ids: vendorIds, preferred_vendors };
 };
 
 const list = async (filters: PartFilters, partRepo: PartRepoType) =>
   partRepo.list(filters);
 
-const getById = async (id: string, partRepo: PartRepoType) => {
-  const part = await partRepo.findById(id);
+const getById = async (id: string, deps: PartServiceDeps) => {
+  const part = await deps.partRepo.findById(id);
   if (!part) throw new NotFoundError("Material not found");
-  return part;
+  const preferred_vendors = await deps.partVendorRepo.listByPart(id);
+  return {
+    ...part,
+    vendor_ids: preferred_vendors.map((v) => v.id),
+    preferred_vendors,
+  };
 };
 
 const update = async (
@@ -145,9 +165,11 @@ const update = async (
   const existing = await partRepo.findById(id);
   if (!existing) throw new NotFoundError("Material not found");
 
-  if (dto.supplier_id) {
-    const supplier = await deps.supplierRepo.findById(dto.supplier_id);
-    if (!supplier) throw new ValidationError("supplier_id does not exist");
+  // Preferred vendors live in the join table, not on the parts row — pull them
+  // out of the patch and, when provided, replace the whole set.
+  const { vendor_ids, ...columnDto } = dto;
+  if (vendor_ids !== undefined) {
+    await assertVendorsExist(vendor_ids, deps);
   }
 
   // Code-composition fields are immutable (enforced by the DTO). Everything
@@ -163,7 +185,7 @@ const update = async (
     "max_stock",
   ] as const;
 
-  for (const [key, value] of Object.entries(dto)) {
+  for (const [key, value] of Object.entries(columnDto)) {
     if (value === undefined) continue;
     if ((numericKeys as readonly string[]).includes(key)) {
       (patch as any)[key] = (value as number).toString();
@@ -172,9 +194,18 @@ const update = async (
     }
   }
 
-  const updated = await partRepo.update(id, patch);
-  if (!updated) throw new ValidationError("Failed to update material");
-  return updated;
+  // Only touch the parts row if there are column changes (an all-vendor update
+  // may leave `patch` empty).
+  if (Object.keys(patch).length > 0) {
+    const updated = await partRepo.update(id, patch);
+    if (!updated) throw new ValidationError("Failed to update material");
+  }
+
+  if (vendor_ids !== undefined) {
+    await deps.partVendorRepo.setForPart(id, vendor_ids);
+  }
+
+  return getById(id, deps);
 };
 
 const remove = async (id: string, partRepo: PartRepoType) => {

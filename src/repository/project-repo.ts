@@ -1,7 +1,29 @@
-import { and, desc, eq, ilike, isNull, or, sql, SQL } from "drizzle-orm";
+import {
+  and,
+  desc,
+  eq,
+  getTableColumns,
+  ilike,
+  isNull,
+  or,
+  sql,
+  SQL,
+} from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { DB } from "../db/db-connection";
-import { NewProject, Project, ProjectStage, projects } from "../db/schema";
+import { NewProject, Project, ProjectStage, projects, users } from "../db/schema";
 import { logger } from "../util";
+
+// Project enriched with the owner's and engineer's display fields, so any role
+// viewing the project can see them without the admin-only users list.
+export type ProjectWithPeople = Project & {
+  owner_name: string | null;
+  owner_initials: string | null;
+  owner_hue: number | null;
+  engineer_name: string | null;
+  engineer_initials: string | null;
+  engineer_hue: number | null;
+};
 
 export interface ProjectFilters {
   search?: string; // number / name / customer
@@ -13,7 +35,7 @@ export interface ProjectFilters {
 
 export type ProjectRepoType = {
   create: (data: NewProject) => Promise<Project | null>;
-  findById: (id: string) => Promise<Project | null>;
+  findById: (id: string) => Promise<ProjectWithPeople | null>;
   list: (filters: ProjectFilters) => Promise<{ rows: Project[]; total: number }>;
   update: (id: string, data: Partial<NewProject>) => Promise<Project | null>;
   softDelete: (id: string) => Promise<boolean>;
@@ -46,11 +68,23 @@ const create = async (data: NewProject): Promise<Project | null> => {
   }
 };
 
-const findById = async (id: string): Promise<Project | null> => {
+const findById = async (id: string): Promise<ProjectWithPeople | null> => {
   try {
+    const owner = alias(users, "owner");
+    const engineer = alias(users, "engineer");
     const [row] = await DB
-      .select()
+      .select({
+        ...getTableColumns(projects),
+        owner_name: owner.name,
+        owner_initials: owner.initials,
+        owner_hue: owner.hue,
+        engineer_name: engineer.name,
+        engineer_initials: engineer.initials,
+        engineer_hue: engineer.hue,
+      })
       .from(projects)
+      .leftJoin(owner, eq(owner.id, projects.owner_id))
+      .leftJoin(engineer, eq(engineer.id, projects.engineer_id))
       .where(and(eq(projects.id, id), isNull(projects.deleted_at)))
       .limit(1);
     return row ?? null;

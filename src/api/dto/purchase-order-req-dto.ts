@@ -79,11 +79,13 @@ export const UpdatePoStatusDto = Type.Object(
 
 export const ReceivePoDto = Type.Object(
   {
-    // Provide a warehouse to post accepted goods into stock (FRD §14). Omit to
-    // only record receipt quantities without affecting inventory.
-    warehouse_id: Type.Optional(
-      Type.String({ format: "uuid", errorMessage: { format: "warehouse_id must be a UUID" } })
-    ),
+    // Required: every receipt posts accepted goods into a warehouse (FRD §14).
+    // Mandatory so a receipt can never flip a PO to Received without stock
+    // actually entering inventory (bug F1 — fabricated completion).
+    warehouse_id: Type.String({
+      format: "uuid",
+      errorMessage: { format: "warehouse_id must be a UUID" },
+    }),
     lines: Type.Array(
       Type.Object(
         {
@@ -106,9 +108,12 @@ export const ReceivePoDto = Type.Object(
   },
   {
     additionalProperties: false,
-    required: ["lines"],
+    required: ["warehouse_id", "lines"],
     errorMessage: {
-      required: { lines: "lines is required" },
+      required: {
+        warehouse_id: "warehouse_id is required to receive goods",
+        lines: "lines is required",
+      },
       additionalProperties: "Unexpected fields in receive request",
     },
   }

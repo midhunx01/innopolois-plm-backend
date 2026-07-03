@@ -8,6 +8,12 @@ enums, and the key workflows.
 > This guide maps those screens onto the **real** API. Field names here are the
 > source of truth.
 
+> **Updated 2026-07-03:** actor/owner names now returned inline on detail views,
+> the BOM audit trail and stock movements (see Gotcha 6); PO `Received` /
+> `Partially Received` can no longer be set via `/status` and `warehouse_id` is
+> now required on receive (see §7). Full rationale in
+> `BACKEND_CHANGES_FOR_FRONTEND.md`.
+
 ---
 
 ## 1. Conventions
@@ -73,6 +79,11 @@ Error:
 4. **IDs are UUIDv7** strings (sortable by creation time).
 5. **Codes are generated server-side** — never send `part_number`,
    `project_number`, `number` (BOM/RFQ/PO); they’re assigned on create.
+6. **Actor/owner names come back inline** — detail views and the audit trail
+   now return `*_name` / `*_initials` / `*_hue` for the relevant user(s). **Do
+   not** resolve `user_id`/`owner_id` via `GET /api/users` (Administrator-only —
+   403 for other roles). Read the fields directly; they’re `null` only if that
+   user was later hard-deleted (fall back to “Unknown user”).
 
 ---
 
@@ -198,7 +209,7 @@ append new options (FRD §6).
   "description": "", "material": "", "finish": "", "revision": "A",
   "lifecycle": "Concept", "sourcing": "Buy",
   "weight_kg": 1.2, "unit_cost": 1250.5, "last_purchase_price": 0,
-  "lead_time_days": 21, "supplier_id": "uuid?",
+  "lead_time_days": 21, "vendor_ids": ["uuid", "uuid"],
   "manufacturer_part_number": "", "make": "", "model": "", "drawing_ref": "",
   "availability": "Out of Stock",
   "stock_qty": 0, "reorder_point": 5, "min_stock": 0, "max_stock": 0,
@@ -210,20 +221,30 @@ Only `category_id`, `subtype_id`, `name` are required. `part_number` is generate
 and returned. **Code fields (`category_id`, `subtype_id`, `major_spec_id`,
 `grade_id`) are immutable** — omit them on update (sending them → 400).
 
+**Preferred vendors are many-to-many.** Send `vendor_ids` as an array of
+vendor UUIDs (each must exist → else 400). On `PATCH`, omit `vendor_ids` to
+leave the vendor list unchanged, or send `[]` to clear it. `GET /api/parts/:id`
+returns the resolved list as `vendor_ids` (UUIDs) plus `preferred_vendors`
+(full vendor objects).
+
 **List** `GET /api/parts` *(paginated)* — query params:
 `search` (code/name/description/drawing/make), `categoryId`, `subtypeId`,
 `lifecycle`, `availability`, `sourcing`, `page`, `pageSize`.
 
-**Other:** `GET /api/parts/:id`, `PATCH /api/parts/:id` (Engineering),
+**Other:** `GET /api/parts/:id` (adds owner fields `owner_name`,
+`owner_initials`, `owner_hue`, and vendor fields `vendor_ids`,
+`preferred_vendors`), `PATCH /api/parts/:id` (Engineering),
 `DELETE /api/parts/:id` (soft delete).
 
 **Response shape (`Part`):** `id, part_number, category_id, subtype_id,
 major_spec_id, grade_id, material_type, sub_type, sub_type_code, major_spec,
 detail_spec, category, name, description, material, finish, revision, lifecycle,
-sourcing, weight_kg, unit_cost, last_purchase_price, lead_time_days, supplier_id,
+sourcing, weight_kg, unit_cost, last_purchase_price, lead_time_days,
 manufacturer_part_number, make, model, drawing_ref, availability, stock_qty,
 reorder_point, min_stock, max_stock, stock_location, uom, compliance[], tags[],
-owner_id, thumbnail_hue, where_used_count, created_at, updated_at`.
+owner_id, thumbnail_hue, where_used_count, created_at, updated_at`. Single-record
+reads (`GET /api/parts/:id`, create/update responses) additionally include
+`vendor_ids` (UUID[]) and `preferred_vendors` (vendor objects).
 
 **Enums:** `lifecycle` = Concept · In Design · In Review · Released · Production ·
 Obsolete. `sourcing` = Make · Buy · Standard. `availability` = In Stock ·
@@ -262,7 +283,8 @@ description?, engineer_id?, stage?, lifecycle?, revision?, version?,
 target_cost?, quoted_price?, thumbnail_hue? }`. `project_number` auto =
 `INP-{year}-{seq}`.
 **List** `GET /api/projects` *(paginated)*: `search`, `stage`, `customer`, `page`, `pageSize`.
-`GET/PATCH/DELETE /api/projects/:id`.
+`GET/PATCH/DELETE /api/projects/:id`. **`GET /:id`** adds people fields:
+`owner_name/owner_initials/owner_hue` **and** `engineer_name/engineer_initials/engineer_hue`.
 **`stage`** (ProjectStage): Enquiry · Technical Evaluation · Quotation ·
 Project Order · Detailed Engineering · Final BOM · Purchase Release ·
 Procurement · Fulfilment · Completed.
@@ -271,7 +293,9 @@ Procurement · Fulfilment · Completed.
 - `POST /` → `{ project_id, bom_type?, revision? }`. `number` auto = `BOM-{seq}`,
   starts at stage **Draft**. `bom_type` = Engineering · Procurement · Final Released.
 - `GET /` *(paginated)*: `projectId`, `stage`, `page`, `pageSize`.
-- `GET /:id` → **detail**: BOM + `lines[]` + `audit[]`.
+- `GET /:id` → **detail**: BOM + `lines[]` + `audit[]` + owner fields
+  (`owner_name`, `owner_initials`, `owner_hue`). Each `audit[]` entry carries the
+  actor fields (`user_name`, `user_initials`, `user_hue`).
 - `PATCH /:id` → `{ bom_type?, revision? }` (not when Released).
 - `DELETE /:id` (Draft only, or Administrator).
 
@@ -303,7 +327,9 @@ Draft ─▶ Technical Review ─▶ Commercial Review ─▶ Approved ─▶ Re
   past the last stage.
 - `reject` sends the BOM back to **Draft**.
 - Returns the updated BOM + `audit[]`. Each audit entry:
-  `{ from_stage, to_stage, action, comment, user_id, created_at }`.
+  `{ from_stage, to_stage, action, comment, user_id, created_at,
+  user_name, user_initials, user_hue }` — the actor's display fields are
+  included, so render the name/avatar straight from the entry.
 - **Lines lock** once the BOM leaves Draft.
 
 ### BOM analysis — `GET /api/project-boms/:id/analysis?groupBy=`
@@ -333,7 +359,8 @@ Drives the “BOM by supplier / category / lead-time / cost” views (FRD §11).
   `number` auto = `RFQ-{seq}`, starts **Draft**. `mode` = Vendor-wise ·
   Category-wise · Package-wise · Single Item · Bulk.
 - `GET /` *(paginated)*: `search`, `status`, `projectId`, `page`, `pageSize`.
-- `GET /:id` → detail: RFQ + `lines[]` + `quotations[]`.
+- `GET /:id` → detail: RFQ + `lines[]` + `quotations[]` + owner fields
+  (`owner_name`, `owner_initials`, `owner_hue`).
 - `PATCH /:id` (Draft only), `DELETE /:id` (Draft only).
 - `POST /:id/send` → Draft → **Sent** (issue to vendors).
 - **`status`** (RfqStatus): Draft · Sent · Quotes In · Comparison · Awarded · Closed.
@@ -369,10 +396,15 @@ Drives the “BOM by supplier / category / lead-time / cost” views (FRD §11).
 ```
   `number` auto = `PO-{seq}`, starts **Draft**. `priority` = Low·Medium·High·Critical.
 - `GET /` *(paginated)*: `search`, `status`, `supplierId`, `page`, `pageSize`.
-- `GET /:id` → PO + `lines[]`.
-- `POST /:id/status` → `{ "status": "Open" }`. Allowed transitions:
-  `Draft→Pending Approval→Open→Partially Received→Received→Closed`; `Cancelled`
-  from any non-terminal. Illegal jumps → 400.
+- `GET /:id` → PO + `lines[]` + owner fields (`owner_name`, `owner_initials`,
+  `owner_hue`).
+- `POST /:id/status` → `{ "status": "Open" }`. **Manual** transitions only:
+  `Draft→Pending Approval→Open`, `Partially Received→Closed` (short-close),
+  `Received→Closed`; `Cancelled` from any non-terminal. Illegal jumps → 400.
+  ⚠️ **`Received` and `Partially Received` are NOT settable here** — they are
+  set only by recording a goods receipt. Posting either to `/status` returns 400
+  (“…set by recording a goods receipt, not by the status pipeline…”). Drive
+  receiving through `/receive`, not `/status`.
 - `POST /:id/receive` (Purchase, Stores) → goods receipt (see Inventory §8).
 - `DELETE /:id` (Draft/Cancelled only).
 - **`status`** (PoStatus): Draft · Pending Approval · Open · Partially Received ·
@@ -397,7 +429,9 @@ Buffer · Transit. `GET /:id` returns the warehouse **plus a live summary**:
 - `GET /movements` *(paginated)* — the stock ledger. Params: `partId`,
   `warehouseId`, `type`, `page`, `pageSize`. Movement fields: `type, direction,
   quantity, unit_cost, inspection_status, rejected_qty, batch, reference,
-  reference_id, note, user_id, created_at`. `type` = opening · purchase ·
+  reference_id, note, user_id, created_at, user_name, user_initials, user_hue`.
+  (The acting user's display fields are included — render them directly.)
+  `type` = opening · purchase ·
   sale_consumption · adjustment · wastage · transfer_in · transfer_out.
 - `GET /alerts` — balances at/below reorder point.
 - `POST /opening` (Stores) → `{ part_id, warehouse_id, quantity, unit_cost?,
@@ -417,11 +451,16 @@ Out of Stock vs reorder point), and **syncs the material’s `stock_qty` +
 { "warehouse_id": "uuid",
   "lines": [ { "po_line_id":"uuid", "received_qty":20, "rejected_qty":2, "batch":"B-77" } ] }
 ```
-- Updates each line’s `received_qty` and the PO `received_pct` / status
-  (Partially Received → Received).
-- If `warehouse_id` is given, posts the **accepted** qty (`received − rejected`)
-  into stock as a `purchase` movement. **Rejected qty never enters inventory**
-  (FRD §14). Omit `warehouse_id` to only record receipt without touching stock.
+- **`warehouse_id` is REQUIRED** — omitting it → 400 (“warehouse_id is required
+  to receive goods”). Every receipt posts stock into a real warehouse; a PO can
+  never reach `Received` without inventory actually moving.
+- **`received_qty` is GROSS** — the total delivered = **accepted + rejected**.
+  The backend books `accepted = received_qty − rejected_qty` into stock as a
+  `purchase` movement; **rejected qty never enters inventory** (FRD §14). So to
+  accept 18 and reject 2, send `received_qty: 20, rejected_qty: 2`.
+- Updates each line’s `received_qty` and the PO `received_pct` / status — the PO
+  becomes `Received` when every line is fully received, else `Partially Received`.
+  This is the **only** way to reach those two statuses (see §7 `/status`).
 
 ---
 

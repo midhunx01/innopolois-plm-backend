@@ -1,12 +1,31 @@
-import { and, desc, eq, ilike, isNull, or, sql, SQL } from "drizzle-orm";
+import {
+  and,
+  desc,
+  eq,
+  getTableColumns,
+  ilike,
+  isNull,
+  or,
+  sql,
+  SQL,
+} from "drizzle-orm";
 import { DB } from "../db/db-connection";
 import {
   NewPurchaseOrder,
   PoStatus,
   PurchaseOrder,
   purchaseOrders,
+  users,
 } from "../db/schema";
 import { logger } from "../util";
+
+// PO enriched with the owner's (buyer's) display fields, so any role viewing
+// the PO can see the owner without the admin-only users list.
+export type PurchaseOrderWithOwner = PurchaseOrder & {
+  owner_name: string | null;
+  owner_initials: string | null;
+  owner_hue: number | null;
+};
 
 export interface PoFilters {
   search?: string; // number / supplier_name
@@ -18,7 +37,7 @@ export interface PoFilters {
 
 export type PurchaseOrderRepoType = {
   create: (data: NewPurchaseOrder) => Promise<PurchaseOrder | null>;
-  findById: (id: string) => Promise<PurchaseOrder | null>;
+  findById: (id: string) => Promise<PurchaseOrderWithOwner | null>;
   list: (filters: PoFilters) => Promise<{ rows: PurchaseOrder[]; total: number }>;
   update: (
     id: string,
@@ -56,11 +75,19 @@ const create = async (
   }
 };
 
-const findById = async (id: string): Promise<PurchaseOrder | null> => {
+const findById = async (
+  id: string
+): Promise<PurchaseOrderWithOwner | null> => {
   try {
     const [row] = await DB
-      .select()
+      .select({
+        ...getTableColumns(purchaseOrders),
+        owner_name: users.name,
+        owner_initials: users.initials,
+        owner_hue: users.hue,
+      })
       .from(purchaseOrders)
+      .leftJoin(users, eq(users.id, purchaseOrders.owner_id))
       .where(and(eq(purchaseOrders.id, id), isNull(purchaseOrders.deleted_at)))
       .limit(1);
     return row ?? null;

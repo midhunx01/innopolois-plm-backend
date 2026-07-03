@@ -1,7 +1,21 @@
-import { and, desc, eq, isNull, sql, SQL } from "drizzle-orm";
+import { and, desc, eq, getTableColumns, isNull, sql, SQL } from "drizzle-orm";
 import { DB } from "../db/db-connection";
-import { BomStage, NewProjectBom, ProjectBom, projectBoms } from "../db/schema";
+import {
+  BomStage,
+  NewProjectBom,
+  ProjectBom,
+  projectBoms,
+  users,
+} from "../db/schema";
 import { logger } from "../util";
+
+// BOM enriched with the owner's display fields, so any role viewing the BOM
+// can see the owner without the admin-only users list.
+export type ProjectBomWithOwner = ProjectBom & {
+  owner_name: string | null;
+  owner_initials: string | null;
+  owner_hue: number | null;
+};
 
 export interface ProjectBomFilters {
   projectId?: string;
@@ -12,7 +26,7 @@ export interface ProjectBomFilters {
 
 export type ProjectBomRepoType = {
   create: (data: NewProjectBom) => Promise<ProjectBom | null>;
-  findById: (id: string) => Promise<ProjectBom | null>;
+  findById: (id: string) => Promise<ProjectBomWithOwner | null>;
   list: (
     filters: ProjectBomFilters
   ) => Promise<{ rows: ProjectBom[]; total: number }>;
@@ -42,11 +56,17 @@ const create = async (data: NewProjectBom): Promise<ProjectBom | null> => {
   }
 };
 
-const findById = async (id: string): Promise<ProjectBom | null> => {
+const findById = async (id: string): Promise<ProjectBomWithOwner | null> => {
   try {
     const [row] = await DB
-      .select()
+      .select({
+        ...getTableColumns(projectBoms),
+        owner_name: users.name,
+        owner_initials: users.initials,
+        owner_hue: users.hue,
+      })
       .from(projectBoms)
+      .leftJoin(users, eq(users.id, projectBoms.owner_id))
       .where(and(eq(projectBoms.id, id), isNull(projectBoms.deleted_at)))
       .limit(1);
     return row ?? null;

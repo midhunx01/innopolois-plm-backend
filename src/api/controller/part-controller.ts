@@ -15,6 +15,7 @@ const partService = service.partService;
 
 const deps: service.PartServiceDeps = {
   partRepo,
+  partVendorRepo: repository.partVendorRepo,
   categoryRepo: repository.materialCategoryRepo,
   subtypeRepo: repository.subtypeRepo,
   majorSpecRepo: repository.majorSpecRepo,
@@ -90,7 +91,7 @@ export const getPart = async (
   try {
     const idValidation = ValidateRequest(req.params.id, UuidString);
     if (!idValidation.valid) throw new ValidationError(idValidation.error);
-    const result = await partService.getById(idValidation.data, partRepo);
+    const result = await partService.getById(idValidation.data, deps);
     ApiResponse.success(res, 200, "Material retrieved", result);
   } catch (error) {
     next(error);

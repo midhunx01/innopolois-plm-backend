@@ -1,7 +1,25 @@
-import { and, desc, eq, ilike, isNull, or, sql, SQL } from "drizzle-orm";
+import {
+  and,
+  desc,
+  eq,
+  getTableColumns,
+  ilike,
+  isNull,
+  or,
+  sql,
+  SQL,
+} from "drizzle-orm";
 import { DB } from "../db/db-connection";
-import { NewRfq, Rfq, RfqStatus, rfqs } from "../db/schema";
+import { NewRfq, Rfq, RfqStatus, rfqs, users } from "../db/schema";
 import { logger } from "../util";
+
+// RFQ enriched with the owner's display fields, so any role viewing the RFQ
+// can see the owner without the admin-only users list.
+export type RfqWithOwner = Rfq & {
+  owner_name: string | null;
+  owner_initials: string | null;
+  owner_hue: number | null;
+};
 
 export interface RfqFilters {
   search?: string; // number / title
@@ -13,7 +31,7 @@ export interface RfqFilters {
 
 export type RfqRepoType = {
   create: (data: NewRfq) => Promise<Rfq | null>;
-  findById: (id: string) => Promise<Rfq | null>;
+  findById: (id: string) => Promise<RfqWithOwner | null>;
   list: (filters: RfqFilters) => Promise<{ rows: Rfq[]; total: number }>;
   update: (id: string, data: Partial<NewRfq>) => Promise<Rfq | null>;
   softDelete: (id: string) => Promise<boolean>;
@@ -40,11 +58,17 @@ const create = async (data: NewRfq): Promise<Rfq | null> => {
   }
 };
 
-const findById = async (id: string): Promise<Rfq | null> => {
+const findById = async (id: string): Promise<RfqWithOwner | null> => {
   try {
     const [row] = await DB
-      .select()
+      .select({
+        ...getTableColumns(rfqs),
+        owner_name: users.name,
+        owner_initials: users.initials,
+        owner_hue: users.hue,
+      })
       .from(rfqs)
+      .leftJoin(users, eq(users.id, rfqs.owner_id))
       .where(and(eq(rfqs.id, id), isNull(rfqs.deleted_at)))
       .limit(1);
     return row ?? null;

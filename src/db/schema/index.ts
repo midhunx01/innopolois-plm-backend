@@ -7,6 +7,7 @@ export * from "./grades";
 export * from "./units";
 export * from "./suppliers";
 export * from "./parts";
+export * from "./part-vendors";
 export * from "./counters";
 export * from "./projects";
 export * from "./project-boms";

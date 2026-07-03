@@ -39,12 +39,22 @@ export interface PurchaseOrderServiceDeps {
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
-// Allowed PO status transitions (FRD §13).
+// Receipt-derived states reflect physical goods arrival. They may ONLY be
+// reached through the goods-receipt endpoint (receive()), which books stock and
+// computes received_pct from the actual received quantities. Reaching them via
+// the plain status pipeline flips the label with no stock posted — fabricating
+// completion (bug F1b: a PO could show "Received" while nothing entered stock).
+const RECEIPT_DERIVED: PoStatus[] = ["Partially Received", "Received"];
+
+// Allowed *manual* PO status transitions (FRD §13). Receipt-derived states are
+// intentionally excluded as targets — only receive() may set them. A partially
+// received PO may be short-closed (close out the remainder) without claiming a
+// full receipt.
 const PO_TRANSITIONS: Record<PoStatus, PoStatus[]> = {
   Draft: ["Pending Approval", "Open", "Cancelled"],
   "Pending Approval": ["Open", "Draft", "Cancelled"],
-  Open: ["Partially Received", "Received", "Cancelled"],
-  "Partially Received": ["Received", "Cancelled"],
+  Open: ["Cancelled"],
+  "Partially Received": ["Closed", "Cancelled"],
   Received: ["Closed"],
   Closed: [],
   Cancelled: [],
@@ -178,6 +188,15 @@ const updateStatus = async (
   const po = await deps.poRepo.findById(id);
   if (!po) throw new NotFoundError("PO not found");
 
+  // Block the loophole: receipt-derived states can't be set by hand — they must
+  // come from an actual goods receipt so stock and received_pct stay truthful.
+  if (RECEIPT_DERIVED.includes(dto.status)) {
+    throw new ValidationError(
+      `"${dto.status}" is set by recording a goods receipt, not by the status ` +
+        `pipeline. Receive goods via POST /api/purchase-orders/${id}/receive.`
+    );
+  }
+
   const allowed = PO_TRANSITIONS[po.status];
   if (!allowed.includes(dto.status)) {
     throw new ValidationError(
@@ -236,9 +255,10 @@ const receive = async (
     });
     line.received_qty = r.received_qty.toString(); // reflect for recompute below
 
-    // Post accepted goods into stock (FRD §14). Rejected qty is recorded on the
-    // movement but never increases on-hand.
-    if (dto.warehouse_id && r.received_qty > 0) {
+    // Post accepted goods into stock (FRD §14). warehouse_id is required, so a
+    // receipt always books a movement. Rejected qty is recorded on the movement
+    // but never increases on-hand.
+    if (r.received_qty > 0) {
       const accepted = r.received_qty - rejected;
       await postMovement(
         {
