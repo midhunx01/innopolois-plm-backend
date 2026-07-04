@@ -5,6 +5,7 @@ export * from "./subtype-service";
 export * from "./major-spec-service";
 export * from "./grade-service";
 export * from "./unit-service";
+export * from "./resource-spec-service";
 export * from "./supplier-service";
 export * from "./part-service";
 export * from "./project-service";

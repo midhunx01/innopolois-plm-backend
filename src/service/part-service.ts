@@ -7,7 +7,9 @@ import {
   MaterialCategoryRepoType,
   PartFilters,
   PartRepoType,
+  PartResourceSpecRepoType,
   PartVendorRepoType,
+  ResourceSpecRepoType,
   SubtypeRepoType,
   SupplierRepoType,
 } from "../repository";
@@ -17,11 +19,13 @@ import { buildMaterialCode } from "../util/helper/material-code";
 export interface PartServiceDeps {
   partRepo: PartRepoType;
   partVendorRepo: PartVendorRepoType;
+  partResourceSpecRepo: PartResourceSpecRepoType;
   categoryRepo: MaterialCategoryRepoType;
   subtypeRepo: SubtypeRepoType;
   majorSpecRepo: MajorSpecRepoType;
   gradeRepo: GradeRepoType;
   supplierRepo: SupplierRepoType;
+  resourceSpecRepo: ResourceSpecRepoType;
 }
 
 const num = (v: number | undefined, fallback = "0"): string =>
@@ -36,6 +40,19 @@ const assertVendorsExist = async (
     const vendor = await deps.supplierRepo.findById(id);
     if (!vendor) {
       throw new ValidationError(`vendor_id "${id}" does not exist`);
+    }
+  }
+};
+
+// Verify every supplied resource-spec id exists; throws on the first miss.
+const assertResourceSpecsExist = async (
+  resourceSpecIds: string[],
+  deps: PartServiceDeps
+): Promise<void> => {
+  for (const id of new Set(resourceSpecIds)) {
+    const spec = await deps.resourceSpecRepo.findById(id);
+    if (!spec) {
+      throw new ValidationError(`resource_spec_id "${id}" does not exist`);
     }
   }
 };
@@ -71,6 +88,9 @@ const create = async (
 
   const vendorIds = dto.vendor_ids ?? [];
   await assertVendorsExist(vendorIds, deps);
+
+  const resourceSpecIds = dto.resource_spec_ids ?? [];
+  await assertResourceSpecsExist(resourceSpecIds, deps);
 
   // 2. Build the intelligent material code TT-SS-MM-DDDD (FRD §4).
   const partNumber = buildMaterialCode(
@@ -138,8 +158,16 @@ const create = async (
   if (!created) throw new ValidationError("Failed to create material");
 
   await deps.partVendorRepo.setForPart(created.id, vendorIds);
+  await deps.partResourceSpecRepo.setForPart(created.id, resourceSpecIds);
   const preferred_vendors = await deps.partVendorRepo.listByPart(created.id);
-  return { ...created, vendor_ids: vendorIds, preferred_vendors };
+  const resource_specs = await deps.partResourceSpecRepo.listByPart(created.id);
+  return {
+    ...created,
+    vendor_ids: vendorIds,
+    preferred_vendors,
+    resource_spec_ids: resourceSpecIds,
+    resource_specs,
+  };
 };
 
 const list = async (filters: PartFilters, partRepo: PartRepoType) =>
@@ -149,10 +177,13 @@ const getById = async (id: string, deps: PartServiceDeps) => {
   const part = await deps.partRepo.findById(id);
   if (!part) throw new NotFoundError("Material not found");
   const preferred_vendors = await deps.partVendorRepo.listByPart(id);
+  const resource_specs = await deps.partResourceSpecRepo.listByPart(id);
   return {
     ...part,
     vendor_ids: preferred_vendors.map((v) => v.id),
     preferred_vendors,
+    resource_spec_ids: resource_specs.map((s) => s.id),
+    resource_specs,
   };
 };
 
@@ -165,11 +196,14 @@ const update = async (
   const existing = await partRepo.findById(id);
   if (!existing) throw new NotFoundError("Material not found");
 
-  // Preferred vendors live in the join table, not on the parts row — pull them
-  // out of the patch and, when provided, replace the whole set.
-  const { vendor_ids, ...columnDto } = dto;
+  // Preferred vendors and resource specs live in join tables, not on the parts
+  // row — pull them out of the patch and, when provided, replace the whole set.
+  const { vendor_ids, resource_spec_ids, ...columnDto } = dto;
   if (vendor_ids !== undefined) {
     await assertVendorsExist(vendor_ids, deps);
+  }
+  if (resource_spec_ids !== undefined) {
+    await assertResourceSpecsExist(resource_spec_ids, deps);
   }
 
   // Code-composition fields are immutable (enforced by the DTO). Everything
@@ -203,6 +237,9 @@ const update = async (
 
   if (vendor_ids !== undefined) {
     await deps.partVendorRepo.setForPart(id, vendor_ids);
+  }
+  if (resource_spec_ids !== undefined) {
+    await deps.partResourceSpecRepo.setForPart(id, resource_spec_ids);
   }
 
   return getById(id, deps);

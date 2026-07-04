@@ -79,6 +79,16 @@ export const CreatePartDto = Type.Object(
         { errorMessage: { type: "vendor_ids must be an array of UUIDs" } }
       )
     ),
+    // Resource specs (Resource Spec master). A material may have several.
+    resource_spec_ids: Type.Optional(
+      Type.Array(
+        Type.String({
+          format: "uuid",
+          errorMessage: { format: "each resource_spec_id must be a UUID" },
+        }),
+        { errorMessage: { type: "resource_spec_ids must be an array of UUIDs" } }
+      )
+    ),
     manufacturer_part_number: Type.Optional(Type.String({ maxLength: 120 })),
     make: Type.Optional(Type.String({ maxLength: 120 })),
     model: Type.Optional(Type.String({ maxLength: 120 })),

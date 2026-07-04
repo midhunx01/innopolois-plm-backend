@@ -200,9 +200,11 @@ e.g. `MB-VA-15-3040` = Mechanical Bought-out · Valve · 15 mm · SS 304.
 | Major specs | `GET/POST /api/major-specs`, `GET/PATCH/DELETE /api/major-specs/:id` | `code`, `label`, `is_active` |
 | Grades | `GET/POST /api/grades`, `GET/PATCH/DELETE /api/grades/:id` | `code`, `label`, `is_active` |
 | Units | `GET/POST /api/units`, `GET/PATCH/DELETE /api/units/:id` | `code`, `name`, `is_active` |
+| Resource specs | `GET/POST /api/resource-specs`, `GET/PATCH/DELETE /api/resource-specs/:id` | `code`, `name`, `description`, `is_active` |
 
 Use these to populate the dropdowns on the “create material” form. Admins can
-append new options (FRD §6).
+append new options (FRD §6). A material can have **multiple** resource specs —
+render `GET /api/resource-specs` as a multi-select and submit `resource_spec_ids[]`.
 
 ### Materials — `/api/parts`
 
@@ -216,6 +218,7 @@ append new options (FRD §6).
   "lifecycle": "Concept", "sourcing": "Buy",
   "weight_kg": 1.2, "unit_cost": 1250.5, "last_purchase_price": 0,
   "lead_time_days": 21, "vendor_ids": ["uuid", "uuid"],
+  "resource_spec_ids": ["uuid", "uuid"],
   "manufacturer_part_number": "", "make": "", "model": "", "drawing_ref": "",
   "availability": "Out of Stock",
   "stock_qty": 0, "reorder_point": 5, "min_stock": 0, "max_stock": 0,
@@ -233,13 +236,20 @@ leave the vendor list unchanged, or send `[]` to clear it. `GET /api/parts/:id`
 returns the resolved list as `vendor_ids` (UUIDs) plus `preferred_vendors`
 (full vendor objects).
 
+**Resource specs are many-to-many** (same behaviour as vendors). Send
+`resource_spec_ids` as an array of resource-spec UUIDs from
+`GET /api/resource-specs` (each must exist → else 400). On `PATCH`, omit to
+leave unchanged, or send `[]` to clear. `GET /api/parts/:id` returns
+`resource_spec_ids` (UUIDs) plus `resource_specs` (full objects).
+
 **List** `GET /api/parts` *(paginated)* — query params:
 `search` (code/name/remarks/drawing/make), `categoryId`, `subtypeId`,
 `lifecycle`, `availability`, `sourcing`, `page`, `pageSize`.
 
 **Other:** `GET /api/parts/:id` (adds owner fields `owner_name`,
-`owner_initials`, `owner_hue`, and vendor fields `vendor_ids`,
-`preferred_vendors`), `PATCH /api/parts/:id` (Engineering),
+`owner_initials`, `owner_hue`, vendor fields `vendor_ids`,
+`preferred_vendors`, and resource-spec fields `resource_spec_ids`,
+`resource_specs`), `PATCH /api/parts/:id` (Engineering),
 `DELETE /api/parts/:id` (soft delete).
 
 **Response shape (`Part`):** `id, part_number, category_id, subtype_id,
@@ -250,7 +260,8 @@ manufacturer_part_number, make, model, drawing_ref, availability, stock_qty,
 reorder_point, min_stock, max_stock, stock_location, uom, compliance[], tags[],
 owner_id, thumbnail_hue, where_used_count, created_at, updated_at`. Single-record
 reads (`GET /api/parts/:id`, create/update responses) additionally include
-`vendor_ids` (UUID[]) and `preferred_vendors` (vendor objects).
+`vendor_ids` (UUID[]) + `preferred_vendors` (vendor objects) and
+`resource_spec_ids` (UUID[]) + `resource_specs` (resource-spec objects).
 
 **Enums:** `lifecycle` = Concept · In Design · In Review · Released · Production ·
 Obsolete. `sourcing` = Make · Buy · Standard. `availability` = In Stock ·

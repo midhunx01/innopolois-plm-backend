@@ -15,6 +15,7 @@ import { subtypeRoutes } from "./api/routes/subtype-route";
 import { majorSpecRoutes } from "./api/routes/major-spec-route";
 import { gradeRoutes } from "./api/routes/grade-route";
 import { unitRoutes } from "./api/routes/unit-route";
+import { resourceSpecRoutes } from "./api/routes/resource-spec-route";
 import { supplierRoutes } from "./api/routes/supplier-route";
 import { partRoutes } from "./api/routes/part-route";
 import { projectRoutes } from "./api/routes/project-route";
@@ -92,6 +93,7 @@ export const ExpressApp = async () => {
   app.use("/api/major-specs", majorSpecRoutes);
   app.use("/api/grades", gradeRoutes);
   app.use("/api/units", unitRoutes);
+  app.use("/api/resource-specs", resourceSpecRoutes);
   app.use("/api/parts", partRoutes);
 
   // ── Module 3: Vendor Database (FRD §7) ────────────────────────────────────

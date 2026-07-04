@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Innopolis PLM — Release Notes v1.0.1 (Frontend)</title>
+<style>
+  :root{
+    --fg:#1c2330; --muted:#5b6675; --line:#e3e8ef; --bg:#ffffff;
+    --accent:#6d28d9; --accent-soft:#f3effd; --code-bg:#0f172a; --code-fg:#e2e8f0;
+    --green:#15803d; --green-bg:#e9f7ef; --amber:#92600a; --amber-bg:#fdf4e3;
+    --red:#b42318; --red-bg:#fdecea; --blue:#1d4ed8; --blue-bg:#eaf0fd;
+  }
+  *{box-sizing:border-box}
+  html{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  body{
+    font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--fg); background:var(--bg); margin:0 auto; padding:0 28px 60px; max-width:920px;
+  }
+  header{ padding:40px 0 20px; border-bottom:3px solid var(--accent); margin-bottom:8px; }
+  .eyebrow{ color:var(--accent); font-weight:700; letter-spacing:.08em; text-transform:uppercase; font-size:12px; }
+  h1{ font-size:32px; margin:6px 0 6px; letter-spacing:-.01em; }
+  .sub{ color:var(--muted); font-size:14px; }
+  h2{ font-size:21px; margin:36px 0 10px; padding-bottom:6px; border-bottom:1px solid var(--line); }
+  h3{ font-size:16px; margin:22px 0 6px; }
+  h4{ font-size:14px; margin:16px 0 4px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+  p{ margin:8px 0; }
+  code{ font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace; font-size:.88em;
+    background:var(--accent-soft); color:#4c1d95; padding:1px 6px; border-radius:5px; }
+  table{ border-collapse:collapse; width:100%; margin:12px 0; font-size:13.5px; }
+  th,td{ text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th{ background:#f7f8fb; font-weight:600; }
+  ul,ol{ margin:8px 0; padding-left:22px; } li{ margin:4px 0; }
+  .muted{ color:var(--muted); } .small{ font-size:12.5px; }
+  .note{ background:var(--accent-soft); border-left:4px solid var(--accent); padding:10px 14px; border-radius:0 8px 8px 0; margin:12px 0; font-size:13.5px; }
+  .warn{ background:var(--amber-bg); border-left:4px solid var(--amber); padding:10px 14px; border-radius:0 8px 8px 0; margin:12px 0; font-size:13.5px; }
+  .tip{ background:var(--green-bg); border-left:4px solid var(--green); padding:10px 14px; border-radius:0 8px 8px 0; margin:12px 0; font-size:13.5px; }
+  .pill{ display:inline-block; font-weight:700; font-size:11px; padding:2px 8px; border-radius:6px; letter-spacing:.03em; background:var(--accent-soft); color:#4c1d95; }
+  .flow{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin:14px 0; font-size:13px; }
+  .flow .step{ background:#f7f8fb; border:1px solid var(--line); border-radius:8px; padding:6px 12px; font-weight:600; }
+  .flow .arrow{ color:var(--accent); font-weight:700; }
+  .toc{ columns:2; column-gap:32px; font-size:13.5px; }
+  .toc a{ color:var(--fg); text-decoration:none; }
+  .card{ border:1px solid var(--line); border-radius:12px; padding:4px 18px 14px; margin:14px 0; }
+  .big-code{ font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace; font-size:20px; font-weight:700;
+    background:var(--code-bg); color:#e2e8f0; padding:12px 18px; border-radius:10px; display:inline-block; letter-spacing:.06em; }
+  footer{ margin-top:44px; padding-top:14px; border-top:1px solid var(--line); color:var(--muted); font-size:12px; }
+  @page{ margin:14mm 12mm; }
+  @media print{
+    body{ padding:0; max-width:none; } a{ color:inherit; text-decoration:none; }
+    .card, table, .flow{ break-inside:avoid; } h2,h3{ break-after:avoid; }
+  }
+
+  pre{ background:var(--code-bg); color:var(--code-fg); padding:14px 16px; border-radius:10px;
+       overflow-x:auto; font-size:12.5px; line-height:1.5; margin:12px 0; break-inside:avoid; }
+  pre code{ background:none; color:inherit; padding:0; font-size:inherit;
+       font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace; }
+  blockquote{ background:var(--amber-bg); border-left:4px solid var(--amber);
+       padding:8px 14px; border-radius:0 8px 8px 0; margin:12px 0; font-size:13.5px; color:#5b4708; }
+  blockquote p{ margin:4px 0; }
+  hr{ border:none; border-top:1px solid var(--line); margin:26px 0; }
+  h2:first-of-type{ margin-top:20px; }
+</style></head><body>
+<header>
+  <div class="eyebrow">Innopolis Bio Innovations · PLM Platform</div>
+  <h1>Release Notes — v1.0.1</h1>
+  <div class="sub">Frontend developer · 2026-07-04 · Multiple preferred vendors, resource specs &amp; material <code>remarks</code> field</div>
+</header>
+
+<p><strong>Release date:</strong> 2026-07-04
+<strong>Backend version:</strong> 1.0.1
+<strong>Audience:</strong> Frontend developer</p>
+<p>This release changes the <strong>Material Master</strong> API contract in three ways — two
+breaking field changes plus one new feature. This doc is the frontend action
+list: what the API now sends/expects, and what to change in the UI.</p>
+<blockquote>
+<p>These changes are live once the <strong>backend v1.0.1 is deployed</strong>. Coordinate the
+UI merge with that deploy — an old UI against v1.0.1 will send the removed
+<code>supplier_id</code> / <code>description</code> fields and get <strong>400</strong> or silently drop data.</p>
+</blockquote>
+<hr>
+<h2>At a glance</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Change</th>
+<th>What the frontend does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Material supports <strong>multiple preferred vendors</strong></td>
+<td>Vendor picker → multi-select, send <code>vendor_ids[]</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Material <code>description</code> → <code>remarks</code></td>
+<td>Rename the field on the material form + views</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Material supports <strong>multiple resource specs</strong> (new master)</td>
+<td>Add a resource-spec multi-select, send <code>resource_spec_ids[]</code></td>
+</tr>
+</tbody></table>
+<p>Affected endpoints: <code>POST /api/parts</code>, <code>PATCH /api/parts/:id</code>,
+<code>GET /api/parts/:id</code>, <code>GET /api/parts</code>, plus the new
+<code>GET /api/resource-specs</code> master (dropdown source). No other module changed.</p>
+<hr>
+<h2>1. Multiple preferred vendors per material</h2>
+<p>A material used to carry a single preferred vendor (<code>supplier_id</code>). It now
+carries a <strong>list</strong> of preferred vendors, <code>vendor_ids</code>.</p>
+<h3>Request — create / update</h3>
+<p>Send an <strong>array of vendor UUIDs</strong> instead of a single id:</p>
+<pre><code class="language-jsonc">// POST / PATCH /api/parts
+{
+  &quot;name&quot;: &quot;SS304 Ball Valve 15mm&quot;,
+  &quot;category_id&quot;: &quot;…&quot;, &quot;subtype_id&quot;: &quot;…&quot;,
+  &quot;vendor_ids&quot;: [&quot;&lt;vendorUuid&gt;&quot;, &quot;&lt;vendorUuid&gt;&quot;]   // was: &quot;supplier_id&quot;: &quot;&lt;uuid&gt;&quot;
+}
+</code></pre>
+<p>Rules:</p>
+<ul>
+<li><code>vendor_ids</code> is <strong>optional</strong>. Every id must be an existing vendor, else <code>400</code>.</li>
+<li>On <code>PATCH</code>: <strong>omit</strong> <code>vendor_ids</code> to leave the vendor list unchanged; send
+<code>[]</code> to clear all vendors.</li>
+</ul>
+<h3>Response — reads</h3>
+<p><code>GET /api/parts/:id</code> and the create/update responses now include:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Use in UI</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>vendor_ids</code></td>
+<td><code>string[]</code></td>
+<td>Selected vendor UUIDs, in the order they were set — bind the multi-select to this</td>
+</tr>
+<tr>
+<td><code>preferred_vendors</code></td>
+<td><code>Vendor[]</code></td>
+<td>Full vendor objects (name, code, …) — render chips/list without a second lookup</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><code>supplier_id</code> no longer exists on a material. Remove every read/write of it.
+(<code>GET /api/parts</code> list rows do <strong>not</strong> include the vendor arrays — fetch the
+single material for its vendors.)</p>
+</blockquote>
+<h3>UI work</h3>
+<ul>
+<li>Change the material form&#39;s vendor control from <strong>single-select → multi-select</strong>.</li>
+<li>Submit the selection as <code>vendor_ids: string[]</code>.</li>
+<li>On the material detail view, render vendors from <code>preferred_vendors</code>
+(display) or <code>vendor_ids</code> (ids).</li>
+</ul>
+<h3>Type change (frontend <code>Part</code>)</h3>
+<pre><code class="language-diff">- supplier_id: string | null
++ vendor_ids: string[]
++ preferred_vendors: Vendor[]
+</code></pre>
+<hr>
+<h2>2. Material <code>description</code> renamed to <code>remarks</code></h2>
+<p>The material&#39;s free-text field <code>description</code> is renamed to <code>remarks</code> (same
+free text, same 2000-char limit). Only the <strong>name</strong> changed.</p>
+<h3>Request &amp; response</h3>
+<pre><code class="language-jsonc">// POST / PATCH /api/parts   and every material read
+{
+  &quot;name&quot;: &quot;SS304 Ball Valve 15mm&quot;,
+  &quot;remarks&quot;: &quot;2-way ball valve&quot;   // was: &quot;description&quot;
+}
+</code></pre>
+<ul>
+<li>The material <code>search</code> query param still matches this field (now <code>remarks</code>).</li>
+<li><strong>Scope:</strong> the <strong>material</strong> field only. <code>description</code> on <strong>BOM lines</strong> and
+<strong>projects</strong> is unchanged — do <strong>not</strong> rename those.</li>
+</ul>
+<h3>UI work</h3>
+<ul>
+<li>Rename the material form field, label binding, and detail view from
+<code>description</code> → <code>remarks</code>.</li>
+</ul>
+<h3>Type change (frontend <code>Part</code>)</h3>
+<pre><code class="language-diff">- description: string
++ remarks: string
+</code></pre>
+<hr>
+<h2>3. Multiple resource specs per material (new)</h2>
+<p>Materials can now be tagged with one or more <strong>resource specs</strong> drawn from a new
+predefined master. This works exactly like preferred vendors — a multi-select
+backed by a master list.</p>
+<h3>New master endpoint — dropdown source</h3>
+<pre><code>GET /api/resource-specs        → [{ id, code, name, description, is_active }]
+</code></pre>
+<p>Admin-managed CRUD (create/update/delete are Administrator-only), same shape as
+Units/Grades. Use <code>GET</code> to populate the resource-spec multi-select.</p>
+<h3>Request — create / update</h3>
+<pre><code class="language-jsonc">// POST / PATCH /api/parts
+{
+  &quot;name&quot;: &quot;SS304 Ball Valve 15mm&quot;,
+  &quot;resource_spec_ids&quot;: [&quot;&lt;resourceSpecUuid&gt;&quot;, &quot;&lt;resourceSpecUuid&gt;&quot;]
+}
+</code></pre>
+<p>Rules (identical to <code>vendor_ids</code>):</p>
+<ul>
+<li>Optional. Every id must be an existing resource spec, else <code>400</code>.</li>
+<li>On <code>PATCH</code>: <strong>omit</strong> to leave unchanged; send <code>[]</code> to clear.</li>
+</ul>
+<h3>Response — reads</h3>
+<p><code>GET /api/parts/:id</code> and create/update responses include:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Use in UI</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>resource_spec_ids</code></td>
+<td><code>string[]</code></td>
+<td>Selected ids — bind the multi-select to this</td>
+</tr>
+<tr>
+<td><code>resource_specs</code></td>
+<td><code>ResourceSpec[]</code></td>
+<td>Full objects (code, name, description) — render chips/list</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>List rows (<code>GET /api/parts</code>) do <strong>not</strong> include these — fetch the single
+material for its resource specs.</p>
+</blockquote>
+<h3>UI work</h3>
+<ul>
+<li>Add a <strong>resource-spec multi-select</strong> to the material form, sourced from
+<code>GET /api/resource-specs</code>, submitting <code>resource_spec_ids: string[]</code>.</li>
+<li>Render them from <code>resource_specs</code> on the material detail view.</li>
+</ul>
+<h3>Type change (frontend <code>Part</code>)</h3>
+<pre><code class="language-diff">+ resource_spec_ids: string[]
++ resource_specs: ResourceSpec[]
+</code></pre>
+<hr>
+<h2>Migration checklist (frontend)</h2>
+<ul>
+<li><input disabled="" type="checkbox"> Material form: vendor picker → <strong>multi-select</strong>, submit <code>vendor_ids: string[]</code>.</li>
+<li><input disabled="" type="checkbox"> Material detail: render vendors from <code>preferred_vendors</code>.</li>
+<li><input disabled="" type="checkbox"> Remove all uses of <code>supplier_id</code> on materials.</li>
+<li><input disabled="" type="checkbox"> Material form + views: rename <code>description</code> → <code>remarks</code>.</li>
+<li><input disabled="" type="checkbox"> Material form: add a <strong>resource-spec multi-select</strong> from <code>GET /api/resource-specs</code>, submit <code>resource_spec_ids: string[]</code>.</li>
+<li><input disabled="" type="checkbox"> Material detail: render resource specs from <code>resource_specs</code>.</li>
+<li><input disabled="" type="checkbox"> Update the <code>Part</code> type/interface (<code>vendor_ids</code>, <code>preferred_vendors</code>, <code>remarks</code>, <code>resource_spec_ids</code>, <code>resource_specs</code>).</li>
+<li><input disabled="" type="checkbox"> Ship the UI <strong>together with</strong> the backend v1.0.1 deploy.</li>
+</ul>
+<hr>
+<h2>Quick reference — material field mapping</h2>
+<table>
+<thead>
+<tr>
+<th>v1.0.0 (old)</th>
+<th>v1.0.1 (new)</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>supplier_id: string</code></td>
+<td><code>vendor_ids: string[]</code></td>
+<td>Single → list of vendor UUIDs</td>
+</tr>
+<tr>
+<td>—</td>
+<td><code>preferred_vendors: Vendor[]</code></td>
+<td>New; single-material reads only</td>
+</tr>
+<tr>
+<td><code>description: string</code></td>
+<td><code>remarks: string</code></td>
+<td>Rename only</td>
+</tr>
+<tr>
+<td>—</td>
+<td><code>resource_spec_ids: string[]</code></td>
+<td>New; multi-select from <code>/api/resource-specs</code></td>
+</tr>
+<tr>
+<td>—</td>
+<td><code>resource_specs: ResourceSpec[]</code></td>
+<td>New; single-material reads only</td>
+</tr>
+</tbody></table>
+<p>Deeper rationale and the full v1.0.1 change list (including non-material backend
+changes) live in <strong><code>BACKEND_CHANGES_FOR_FRONTEND.md</code></strong>; the complete endpoint
+contract is in <strong><code>FRONTEND_API_GUIDE.md</code></strong>.</p>
+
+<footer>Innopolis PLM backend · v1.0.1 · Frontend action list · Generated from RELEASE_NOTES_1.0.1.md</footer>
+</body></html>

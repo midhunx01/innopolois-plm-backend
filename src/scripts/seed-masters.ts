@@ -14,6 +14,7 @@ import {
   gradeRepo,
   majorSpecRepo,
   materialCategoryRepo,
+  resourceSpecRepo,
   subtypeRepo,
   supplierRepo,
   unitRepo,
@@ -118,6 +119,15 @@ const UNITS: { code: string; name: string }[] = [
   { code: "Sqm", name: "Square Metre" },
   { code: "Box", name: "Box" },
   { code: "Roll", name: "Roll" },
+];
+
+const RESOURCE_SPECS: { code: string; name: string; description: string }[] = [
+  { code: "RS-STD", name: "Standard", description: "Standard resource specification" },
+  { code: "RS-HD", name: "Heavy Duty", description: "Heavy-duty rated resource specification" },
+  { code: "RS-FG", name: "Food Grade", description: "Food-grade compliant resource specification" },
+  { code: "RS-EXP", name: "Explosion Proof", description: "Explosion-proof / hazardous-area rated" },
+  { code: "RS-CR", name: "Corrosion Resistant", description: "Corrosion-resistant resource specification" },
+  { code: "RS-HT", name: "High Temperature", description: "High-temperature rated resource specification" },
 ];
 
 // Demo role users (mirror the frontend src/auth/credentials.ts).
@@ -226,6 +236,17 @@ async function seed() {
   for (const u of UNITS) {
     if (await unitRepo.findByCode(u.code)) continue;
     await unitRepo.create({ id: uuidv7(), code: u.code, name: u.name, is_active: true });
+  }
+
+  for (const r of RESOURCE_SPECS) {
+    if (await resourceSpecRepo.findByCode(r.code)) continue;
+    await resourceSpecRepo.create({
+      id: uuidv7(),
+      code: r.code,
+      name: r.name,
+      description: r.description,
+      is_active: true,
+    });
   }
 
   // Vendors (FRD §7)

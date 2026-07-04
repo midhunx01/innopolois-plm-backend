@@ -2,14 +2,15 @@
 
 **Date:** 2026-07-04 · **Audience:** Frontend developer · **Backend version:** 1.0.1
 
-Four backend updates change the API contract. Each is summarized here with exactly what the frontend needs to do.
+Five backend updates change the API contract. Each is summarized here with exactly what the frontend needs to do.
 
 - **Part A — User attribution (audit trail & owners):** person names now come back on the record itself; stop resolving them via the admin-only users list.
 - **Part B — PO receipt & status (bug F1):** `Received` can no longer be faked; the receive call now requires a warehouse.
 - **Part C — Multiple preferred vendors per material:** `supplier_id` is replaced by a `vendor_ids[]` list.
 - **Part D — Material `description` renamed to `remarks`.**
+- **Part E — Multiple resource specs per material:** new `resource_specs` master + `resource_spec_ids[]` on materials.
 
-Parts A and B are **live after a server rebuild/restart**. **Parts C and D require a database migration** (`npm run db:push`) — see those sections.
+Parts A and B are **live after a server rebuild/restart**. **Parts C, D and E require a database migration** (`npm run db:push`) — see those sections.
 
 ---
 
@@ -186,6 +187,41 @@ The free-text `description` field on a **material** is renamed to `remarks` (sam
 
 ---
 
+## Part E · Multiple resource specs per material
+
+### What changed — ⚠️ new feature + requires a DB migration
+Materials can now carry one or more **resource specs** from a new predefined
+master (`resource_specs`). It's a many-to-many relation, modelled exactly like
+preferred vendors (Part C).
+
+**New master endpoint** (dropdown source; admin-managed CRUD, same shape as Units/Grades):
+```
+GET /api/resource-specs   → [{ id, code, name, description, is_active }]
+```
+
+**Create / update** `POST` / `PATCH /api/parts`
+```jsonc
+{
+  // ...other material fields...
+  "resource_spec_ids": ["<resourceSpecUuid>", "<resourceSpecUuid>"]
+}
+```
+- `resource_spec_ids` is optional; every id must exist in the resource-spec master → else **400**.
+- On `PATCH`: **omit** to leave unchanged; send `[]` to clear.
+
+**Read** `GET /api/parts/:id` (and create/update responses) now return:
+
+| Field | Type | Use |
+|-------|------|-----|
+| `resource_spec_ids` | string[] | Selected resource-spec UUIDs |
+| `resource_specs` | object[] | Full resource-spec objects (code, name, description) |
+
+### Frontend action
+1. Add a **resource-spec multi-select** to the material form, sourced from `GET /api/resource-specs`, submitting `resource_spec_ids: string[]`.
+2. Render selected specs from `resource_specs` on the material detail view.
+
+---
+
 ## Quick checklist
 
 - [ ] Read actor/owner names from the record fields; remove the `GET /api/users` lookup for name resolution.
@@ -195,3 +231,4 @@ The free-text `description` field on a **material** is renamed to `remarks` (sam
 - [ ] Confirm receive sends **gross** `received_qty` (accepted + rejected).
 - [ ] Switch the material vendor picker to multi-select sending `vendor_ids[]`; stop using `supplier_id`.
 - [ ] Rename the material `description` field to `remarks` on create/update and read views.
+- [ ] Add a material resource-spec multi-select from `GET /api/resource-specs`, submit `resource_spec_ids[]`.

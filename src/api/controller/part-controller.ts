@@ -16,11 +16,13 @@ const partService = service.partService;
 const deps: service.PartServiceDeps = {
   partRepo,
   partVendorRepo: repository.partVendorRepo,
+  partResourceSpecRepo: repository.partResourceSpecRepo,
   categoryRepo: repository.materialCategoryRepo,
   subtypeRepo: repository.subtypeRepo,
   majorSpecRepo: repository.majorSpecRepo,
   gradeRepo: repository.gradeRepo,
   supplierRepo: repository.supplierRepo,
+  resourceSpecRepo: repository.resourceSpecRepo,
 };
 
 export const createPart = async (

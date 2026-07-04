@@ -1,130 +1,183 @@
-# Release Notes — v1.0.1
+# Release Notes — v1.0.1 (Frontend)
 
 **Release date:** 2026-07-04
-**Component:** Innopolis PLM backend (`innopolis-plm-backend`)
-**Previous version:** 1.0.0
+**Backend version:** 1.0.1
+**Audience:** Frontend developer
 
-This release adds support for **multiple preferred vendors per material** and
-renames the material `description` field to `remarks`. Both changes touch the
-Material Master API contract and require a database migration.
+This release changes the **Material Master** API contract in three ways — two
+breaking field changes plus one new feature. This doc is the frontend action
+list: what the API now sends/expects, and what to change in the UI.
 
----
-
-## Highlights
-
-| # | Change | Type | Migration |
-|---|--------|------|-----------|
-| 1 | Materials can have **multiple preferred vendors** | ✨ Feature · ⚠️ breaking | Required |
-| 2 | Material `description` → `remarks` | 🔧 Change · ⚠️ breaking | Required |
+> These changes are live once the **backend v1.0.1 is deployed**. Coordinate the
+> UI merge with that deploy — an old UI against v1.0.1 will send the removed
+> `supplier_id` / `description` fields and get **400** or silently drop data.
 
 ---
 
-## 1. Multiple preferred vendors per material ✨
+## At a glance
 
-Previously a material referenced a **single** preferred vendor (`supplier_id`).
-A material can now list **several** preferred vendors.
+| # | Change | What the frontend does |
+|---|--------|------------------------|
+| 1 | Material supports **multiple preferred vendors** | Vendor picker → multi-select, send `vendor_ids[]` |
+| 2 | Material `description` → `remarks` | Rename the field on the material form + views |
+| 3 | Material supports **multiple resource specs** (new master) | Add a resource-spec multi-select, send `resource_spec_ids[]` |
 
-**What changed**
-- The single `parts.supplier_id` foreign key is replaced by a many-to-many join
-  table, `part_vendors` (a material ↔ vendor relation).
-- The API field is now `vendor_ids` — an array of vendor UUIDs — matching the
-  `vendor_id` convention already used on BOM lines.
-- BOM lines default their vendor to the material's **first** preferred vendor
-  when one isn't chosen explicitly.
+Affected endpoints: `POST /api/parts`, `PATCH /api/parts/:id`,
+`GET /api/parts/:id`, `GET /api/parts`, plus the new
+`GET /api/resource-specs` master (dropdown source). No other module changed.
 
-**API contract**
+---
+
+## 1. Multiple preferred vendors per material
+
+A material used to carry a single preferred vendor (`supplier_id`). It now
+carries a **list** of preferred vendors, `vendor_ids`.
+
+### Request — create / update
+Send an **array of vendor UUIDs** instead of a single id:
+
 ```jsonc
 // POST / PATCH /api/parts
 {
-  // ...other material fields...
-  "vendor_ids": ["<vendorUuid>", "<vendorUuid>"]   // replaces supplier_id
+  "name": "SS304 Ball Valve 15mm",
+  "category_id": "…", "subtype_id": "…",
+  "vendor_ids": ["<vendorUuid>", "<vendorUuid>"]   // was: "supplier_id": "<uuid>"
 }
 ```
-- `vendor_ids` is optional; every id must be an existing vendor → else **400**.
-- On `PATCH`: **omit** `vendor_ids` to leave the list unchanged; send `[]` to clear it.
 
-Single-material reads (`GET /api/parts/:id`, and create/update responses) now return:
+Rules:
+- `vendor_ids` is **optional**. Every id must be an existing vendor, else `400`.
+- On `PATCH`: **omit** `vendor_ids` to leave the vendor list unchanged; send
+  `[]` to clear all vendors.
 
-| Field | Type | Use |
-|-------|------|-----|
-| `vendor_ids` | string[] | Vendor UUIDs, in the order they were set |
-| `preferred_vendors` | vendor[] | Full vendor objects for direct display |
+### Response — reads
+`GET /api/parts/:id` and the create/update responses now include:
 
-> ⚠️ **Breaking:** `supplier_id` no longer exists on a material. The migration
-> **drops** the old column — any previously-stored single preferred vendor is
-> **not** carried over (accepted for this MVP). Re-assign vendors after upgrade.
+| Field | Type | Use in UI |
+|-------|------|-----------|
+| `vendor_ids` | `string[]` | Selected vendor UUIDs, in the order they were set — bind the multi-select to this |
+| `preferred_vendors` | `Vendor[]` | Full vendor objects (name, code, …) — render chips/list without a second lookup |
+
+> `supplier_id` no longer exists on a material. Remove every read/write of it.
+> (`GET /api/parts` list rows do **not** include the vendor arrays — fetch the
+> single material for its vendors.)
+
+### UI work
+- Change the material form's vendor control from **single-select → multi-select**.
+- Submit the selection as `vendor_ids: string[]`.
+- On the material detail view, render vendors from `preferred_vendors`
+  (display) or `vendor_ids` (ids).
+
+### Type change (frontend `Part`)
+```diff
+- supplier_id: string | null
++ vendor_ids: string[]
++ preferred_vendors: Vendor[]
+```
 
 ---
 
-## 2. Material `description` renamed to `remarks` 🔧
+## 2. Material `description` renamed to `remarks`
 
-The free-text `description` field on a **material** is renamed to `remarks`
-(same `text` type, same behaviour).
+The material's free-text field `description` is renamed to `remarks` (same
+free text, same 2000-char limit). Only the **name** changed.
 
-**API contract**
+### Request & response
 ```jsonc
-// POST / PATCH /api/parts
+// POST / PATCH /api/parts   and every material read
 {
-  // ...other material fields...
+  "name": "SS304 Ball Valve 15mm",
   "remarks": "2-way ball valve"   // was: "description"
 }
 ```
-- The material `search` parameter still matches this field (now `remarks`).
-- This is a **column rename**, so existing values **are preserved**.
+- The material `search` query param still matches this field (now `remarks`).
+- **Scope:** the **material** field only. `description` on **BOM lines** and
+  **projects** is unchanged — do **not** rename those.
 
-> ⚠️ **Breaking (naming only):** the request/response field name changes from
-> `description` to `remarks`. **Scope is the material only** — the `description`
-> fields on **BOM lines** and **projects** are unchanged.
+### UI work
+- Rename the material form field, label binding, and detail view from
+  `description` → `remarks`.
 
----
-
-## Database migrations
-
-Two migrations ship with this release (in `src/db/migrations/`):
-
-| Migration | Effect |
-|-----------|--------|
-| `0001_glamorous_ma_gnuci.sql` | Create `part_vendors`; drop `parts.supplier_id` |
-| `0002_material_remarks.sql` | Rename `parts.description` → `parts.remarks` |
-
-**Apply on deploy:**
-```bash
-npm run db:push
+### Type change (frontend `Part`)
+```diff
+- description: string
++ remarks: string
 ```
 
-> ⚠️ Migration `0001` **drops** `parts.supplier_id`. Take a backup first if any
-> preferred-vendor data must be retained.
+---
+
+## 3. Multiple resource specs per material (new)
+
+Materials can now be tagged with one or more **resource specs** drawn from a new
+predefined master. This works exactly like preferred vendors — a multi-select
+backed by a master list.
+
+### New master endpoint — dropdown source
+```
+GET /api/resource-specs        → [{ id, code, name, description, is_active }]
+```
+Admin-managed CRUD (create/update/delete are Administrator-only), same shape as
+Units/Grades. Use `GET` to populate the resource-spec multi-select.
+
+### Request — create / update
+```jsonc
+// POST / PATCH /api/parts
+{
+  "name": "SS304 Ball Valve 15mm",
+  "resource_spec_ids": ["<resourceSpecUuid>", "<resourceSpecUuid>"]
+}
+```
+Rules (identical to `vendor_ids`):
+- Optional. Every id must be an existing resource spec, else `400`.
+- On `PATCH`: **omit** to leave unchanged; send `[]` to clear.
+
+### Response — reads
+`GET /api/parts/:id` and create/update responses include:
+
+| Field | Type | Use in UI |
+|-------|------|-----------|
+| `resource_spec_ids` | `string[]` | Selected ids — bind the multi-select to this |
+| `resource_specs` | `ResourceSpec[]` | Full objects (code, name, description) — render chips/list |
+
+> List rows (`GET /api/parts`) do **not** include these — fetch the single
+> material for its resource specs.
+
+### UI work
+- Add a **resource-spec multi-select** to the material form, sourced from
+  `GET /api/resource-specs`, submitting `resource_spec_ids: string[]`.
+- Render them from `resource_specs` on the material detail view.
+
+### Type change (frontend `Part`)
+```diff
++ resource_spec_ids: string[]
++ resource_specs: ResourceSpec[]
+```
 
 ---
 
-## Upgrade checklist
+## Migration checklist (frontend)
 
-**Backend / deploy**
-- [ ] Pull `v1.0.1`, `npm install`, rebuild.
-- [ ] Back up the database (migration `0001` is destructive on `parts.supplier_id`).
-- [ ] Run `npm run db:push`.
-- [ ] Restart the service.
-
-**Frontend**
-- [ ] Change the material vendor picker from single-select to **multi-select**;
-      send `vendor_ids: string[]` instead of `supplier_id`.
-- [ ] Render preferred vendors from `preferred_vendors` (or `vendor_ids`).
-- [ ] Rename the material `description` field → `remarks` on create/update and
-      read views.
-- [ ] Remove all reads/writes of the old `supplier_id` field on materials.
-
-Full frontend migration detail: `BACKEND_CHANGES_FOR_FRONTEND.md` (Parts C & D).
+- [ ] Material form: vendor picker → **multi-select**, submit `vendor_ids: string[]`.
+- [ ] Material detail: render vendors from `preferred_vendors`.
+- [ ] Remove all uses of `supplier_id` on materials.
+- [ ] Material form + views: rename `description` → `remarks`.
+- [ ] Material form: add a **resource-spec multi-select** from `GET /api/resource-specs`, submit `resource_spec_ids: string[]`.
+- [ ] Material detail: render resource specs from `resource_specs`.
+- [ ] Update the `Part` type/interface (`vendor_ids`, `preferred_vendors`, `remarks`, `resource_spec_ids`, `resource_specs`).
+- [ ] Ship the UI **together with** the backend v1.0.1 deploy.
 
 ---
 
-## Affected endpoints
+## Quick reference — material field mapping
 
-| Endpoint | Change |
-|----------|--------|
-| `POST /api/parts` | `supplier_id` → `vendor_ids[]`; `description` → `remarks` |
-| `PATCH /api/parts/:id` | `supplier_id` → `vendor_ids[]`; `description` → `remarks` |
-| `GET /api/parts/:id` | returns `vendor_ids` + `preferred_vendors`; `remarks` replaces `description` |
-| `GET /api/parts` | `search` matches `remarks` (was `description`) |
+| v1.0.0 (old) | v1.0.1 (new) | Notes |
+|--------------|--------------|-------|
+| `supplier_id: string` | `vendor_ids: string[]` | Single → list of vendor UUIDs |
+| — | `preferred_vendors: Vendor[]` | New; single-material reads only |
+| `description: string` | `remarks: string` | Rename only |
+| — | `resource_spec_ids: string[]` | New; multi-select from `/api/resource-specs` |
+| — | `resource_specs: ResourceSpec[]` | New; single-material reads only |
 
-No other modules changed their contract. Purchase Orders keep their own single
-`supplier_id`; BOM lines and RFQ lines keep their own `vendor_id` / `description`.
+Deeper rationale and the full v1.0.1 change list (including non-material backend
+changes) live in **`BACKEND_CHANGES_FOR_FRONTEND.md`**; the complete endpoint
+contract is in **`FRONTEND_API_GUIDE.md`**.

@@ -144,6 +144,19 @@ FROM (VALUES
 ) AS v(code, name)
 WHERE NOT EXISTS (SELECT 1 FROM units u WHERE u.code = v.code);
 
+-- ── 6b. Resource Spec master (FRD §6 master table) ──────────────────────────
+INSERT INTO resource_specs (id, code, name, description)
+SELECT gen_random_uuid(), v.code, v.name, v.description
+FROM (VALUES
+  ('RS-STD','Standard','Standard resource specification'),
+  ('RS-HD','Heavy Duty','Heavy-duty rated resource specification'),
+  ('RS-FG','Food Grade','Food-grade compliant resource specification'),
+  ('RS-EXP','Explosion Proof','Explosion-proof / hazardous-area rated'),
+  ('RS-CR','Corrosion Resistant','Corrosion-resistant resource specification'),
+  ('RS-HT','High Temperature','High-temperature rated resource specification')
+) AS v(code, name, description)
+WHERE NOT EXISTS (SELECT 1 FROM resource_specs r WHERE r.code = v.code);
+
 -- ── 7. Vendor Master (FRD §7) ───────────────────────────────────────────────
 INSERT INTO suppliers (
   id, code, name, country, region, category, categories_supplied, tier,

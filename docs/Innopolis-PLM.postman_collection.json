@@ -54,6 +54,10 @@
       "value": ""
     },
     {
+      "key": "resourceSpecId",
+      "value": ""
+    },
+    {
       "key": "partId",
       "value": ""
     },
@@ -1151,6 +1155,152 @@
           ]
         },
         {
+          "name": "Resource Specs",
+          "description": "Predefined resource specification master. A material can reference several via resource_spec_ids[].",
+          "item": [
+            {
+              "name": "List resource specs",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/resource-specs",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "resource-specs"
+                  ]
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const d=pm.response.json().data; if(d&&d.length) pm.collectionVariables.set('resourceSpecId', d[0].id);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Create resource spec (admin)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/resource-specs",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "resource-specs"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"code\": \"RS-STD\",\n  \"name\": \"Standard\",\n  \"description\": \"Standard resource specification\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "const json = pm.response.json();",
+                      "const data = json.data || {};",
+                      "pm.collectionVariables.set(\"resourceSpecId\", data.id);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Get resource spec",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/resource-specs/{{resourceSpecId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "resource-specs",
+                    "{{resourceSpecId}}"
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Update resource spec (admin)",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/resource-specs/{{resourceSpecId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "resource-specs",
+                    "{{resourceSpecId}}"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"description\": \"Updated standard spec\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Delete resource spec (admin)",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/resource-specs/{{resourceSpecId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "resource-specs",
+                    "{{resourceSpecId}}"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
           "name": "Materials (Parts)",
           "description": "Material code TT-SS-MM-DDDD is generated server-side from the selected masters.",
           "item": [
@@ -1230,7 +1380,7 @@
                 },
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"category_id\": \"{{categoryId}}\",\n  \"subtype_id\": \"{{subtypeId}}\",\n  \"major_spec_id\": \"{{majorSpecId}}\",\n  \"grade_id\": \"{{gradeId}}\",\n  \"name\": \"SS304 Ball Valve 15mm\",\n  \"remarks\": \"2-way ball valve\",\n  \"material\": \"Stainless Steel 304\",\n  \"revision\": \"A\",\n  \"lifecycle\": \"Concept\",\n  \"sourcing\": \"Buy\",\n  \"weight_kg\": 1.2,\n  \"unit_cost\": 1250.5,\n  \"lead_time_days\": 21,\n  \"vendor_ids\": [],\n  \"reorder_point\": 5,\n  \"uom\": \"Nos\",\n  \"compliance\": [\n    \"ASME\"\n  ],\n  \"tags\": [\n    \"critical-path\"\n  ],\n  \"thumbnail_hue\": 172\n}",
+                  "raw": "{\n  \"category_id\": \"{{categoryId}}\",\n  \"subtype_id\": \"{{subtypeId}}\",\n  \"major_spec_id\": \"{{majorSpecId}}\",\n  \"grade_id\": \"{{gradeId}}\",\n  \"name\": \"SS304 Ball Valve 15mm\",\n  \"remarks\": \"2-way ball valve\",\n  \"material\": \"Stainless Steel 304\",\n  \"revision\": \"A\",\n  \"lifecycle\": \"Concept\",\n  \"sourcing\": \"Buy\",\n  \"weight_kg\": 1.2,\n  \"unit_cost\": 1250.5,\n  \"lead_time_days\": 21,\n  \"vendor_ids\": [],\n  \"resource_spec_ids\": [\n    \"{{resourceSpecId}}\"\n  ],\n  \"reorder_point\": 5,\n  \"uom\": \"Nos\",\n  \"compliance\": [\n    \"ASME\"\n  ],\n  \"tags\": [\n    \"critical-path\"\n  ],\n  \"thumbnail_hue\": 172\n}",
                   "options": {
                     "raw": {
                       "language": "json"
