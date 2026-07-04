@@ -1230,7 +1230,7 @@
                 },
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"category_id\": \"{{categoryId}}\",\n  \"subtype_id\": \"{{subtypeId}}\",\n  \"major_spec_id\": \"{{majorSpecId}}\",\n  \"grade_id\": \"{{gradeId}}\",\n  \"name\": \"SS304 Ball Valve 15mm\",\n  \"description\": \"2-way ball valve\",\n  \"material\": \"Stainless Steel 304\",\n  \"revision\": \"A\",\n  \"lifecycle\": \"Concept\",\n  \"sourcing\": \"Buy\",\n  \"weight_kg\": 1.2,\n  \"unit_cost\": 1250.5,\n  \"lead_time_days\": 21,\n  \"vendor_ids\": [],\n  \"reorder_point\": 5,\n  \"uom\": \"Nos\",\n  \"compliance\": [\n    \"ASME\"\n  ],\n  \"tags\": [\n    \"critical-path\"\n  ],\n  \"thumbnail_hue\": 172\n}",
+                  "raw": "{\n  \"category_id\": \"{{categoryId}}\",\n  \"subtype_id\": \"{{subtypeId}}\",\n  \"major_spec_id\": \"{{majorSpecId}}\",\n  \"grade_id\": \"{{gradeId}}\",\n  \"name\": \"SS304 Ball Valve 15mm\",\n  \"remarks\": \"2-way ball valve\",\n  \"material\": \"Stainless Steel 304\",\n  \"revision\": \"A\",\n  \"lifecycle\": \"Concept\",\n  \"sourcing\": \"Buy\",\n  \"weight_kg\": 1.2,\n  \"unit_cost\": 1250.5,\n  \"lead_time_days\": 21,\n  \"vendor_ids\": [],\n  \"reorder_point\": 5,\n  \"uom\": \"Nos\",\n  \"compliance\": [\n    \"ASME\"\n  ],\n  \"tags\": [\n    \"critical-path\"\n  ],\n  \"thumbnail_hue\": 172\n}",
                   "options": {
                     "raw": {
                       "language": "json"

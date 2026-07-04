@@ -30,7 +30,7 @@ export type PartWithOwner = Part & {
 };
 
 export interface PartFilters {
-  search?: string; // code / name / description / drawing / make
+  search?: string; // code / name / remarks / drawing / make
   categoryId?: string;
   subtypeId?: string;
   lifecycle?: Lifecycle;
@@ -58,7 +58,7 @@ const buildWhere = (filters: PartFilters): SQL | undefined => {
       or(
         ilike(parts.part_number, term),
         ilike(parts.name, term),
-        ilike(parts.description, term),
+        ilike(parts.remarks, term),
         ilike(parts.drawing_ref, term),
         ilike(parts.make, term)
       )

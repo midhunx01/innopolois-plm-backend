@@ -104,7 +104,7 @@ const create = async (
     category: category.name,
 
     name: dto.name,
-    description: dto.description ?? "",
+    remarks: dto.remarks ?? "",
     material: dto.material ?? "",
     finish: dto.finish ?? "",
     revision: dto.revision ?? "A",

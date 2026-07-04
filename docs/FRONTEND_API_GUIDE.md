@@ -14,6 +14,12 @@ enums, and the key workflows.
 > now required on receive (see §7). Full rationale in
 > `BACKEND_CHANGES_FOR_FRONTEND.md`.
 
+> **Updated 2026-07-04 (v1.0.1):** materials now support **multiple preferred
+> vendors** — the single `supplier_id` is replaced by a `vendor_ids[]` list
+> (reads also return `preferred_vendors`); and the material `description` field
+> is renamed to `remarks`. Both need a DB migration. See `RELEASE_NOTES_1.0.1.md`
+> and `BACKEND_CHANGES_FOR_FRONTEND.md`.
+
 ---
 
 ## 1. Conventions
@@ -206,7 +212,7 @@ append new options (FRD §6).
   "category_id": "uuid", "subtype_id": "uuid",
   "major_spec_id": "uuid?", "grade_id": "uuid?",
   "name": "SS304 Ball Valve 15mm",
-  "description": "", "material": "", "finish": "", "revision": "A",
+  "remarks": "", "material": "", "finish": "", "revision": "A",
   "lifecycle": "Concept", "sourcing": "Buy",
   "weight_kg": 1.2, "unit_cost": 1250.5, "last_purchase_price": 0,
   "lead_time_days": 21, "vendor_ids": ["uuid", "uuid"],
@@ -228,7 +234,7 @@ returns the resolved list as `vendor_ids` (UUIDs) plus `preferred_vendors`
 (full vendor objects).
 
 **List** `GET /api/parts` *(paginated)* — query params:
-`search` (code/name/description/drawing/make), `categoryId`, `subtypeId`,
+`search` (code/name/remarks/drawing/make), `categoryId`, `subtypeId`,
 `lifecycle`, `availability`, `sourcing`, `page`, `pageSize`.
 
 **Other:** `GET /api/parts/:id` (adds owner fields `owner_name`,
@@ -238,7 +244,7 @@ returns the resolved list as `vendor_ids` (UUIDs) plus `preferred_vendors`
 
 **Response shape (`Part`):** `id, part_number, category_id, subtype_id,
 major_spec_id, grade_id, material_type, sub_type, sub_type_code, major_spec,
-detail_spec, category, name, description, material, finish, revision, lifecycle,
+detail_spec, category, name, remarks, material, finish, revision, lifecycle,
 sourcing, weight_kg, unit_cost, last_purchase_price, lead_time_days,
 manufacturer_part_number, make, model, drawing_ref, availability, stock_qty,
 reorder_point, min_stock, max_stock, stock_location, uom, compliance[], tags[],

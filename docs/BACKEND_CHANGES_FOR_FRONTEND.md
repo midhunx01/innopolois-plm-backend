@@ -1,14 +1,15 @@
 # Backend Changes — Frontend Action Required
 
-**Date:** 2026-07-03 · **Audience:** Frontend developer
+**Date:** 2026-07-04 · **Audience:** Frontend developer · **Backend version:** 1.0.1
 
-Three backend updates change the API contract. Each is summarized here with exactly what the frontend needs to do.
+Four backend updates change the API contract. Each is summarized here with exactly what the frontend needs to do.
 
 - **Part A — User attribution (audit trail & owners):** person names now come back on the record itself; stop resolving them via the admin-only users list.
 - **Part B — PO receipt & status (bug F1):** `Received` can no longer be faked; the receive call now requires a warehouse.
 - **Part C — Multiple preferred vendors per material:** `supplier_id` is replaced by a `vendor_ids[]` list.
+- **Part D — Material `description` renamed to `remarks`.**
 
-Parts A and B are **live after a server rebuild/restart**. **Part C also requires a database migration** (`npm run db:push`) — see that section.
+Parts A and B are **live after a server rebuild/restart**. **Parts C and D require a database migration** (`npm run db:push`) — see those sections.
 
 ---
 
@@ -164,6 +165,27 @@ The single `supplier_id` field on a material is **replaced** by a list, `vendor_
 
 ---
 
+## Part D · Material `description` renamed to `remarks`
+
+### What changed — ⚠️ breaking + requires a DB migration
+The free-text `description` field on a **material** is renamed to `remarks` (same type, same behaviour). This is a column rename, so existing values are preserved — but the API field name changes. Applies to `POST` / `PATCH /api/parts` bodies and every material read.
+
+```jsonc
+// POST / PATCH /api/parts
+{
+  // ...other material fields...
+  "remarks": "2-way ball valve"   // was: "description"
+}
+```
+- The material `search` param still matches this field (now labelled `remarks`).
+- **Scope:** only the **material** field changed. The `description` fields on **BOM lines** and **projects** are unchanged.
+
+### Frontend action
+1. Rename the material form's `description` field → `remarks` on create/update payloads.
+2. Read the material's free text from `remarks` on list/detail views.
+
+---
+
 ## Quick checklist
 
 - [ ] Read actor/owner names from the record fields; remove the `GET /api/users` lookup for name resolution.
@@ -172,3 +194,4 @@ The single `supplier_id` field on a material is **replaced** by a list, `vendor_
 - [ ] Ensure the receive payload always includes `warehouse_id`.
 - [ ] Confirm receive sends **gross** `received_qty` (accepted + rejected).
 - [ ] Switch the material vendor picker to multi-select sending `vendor_ids[]`; stop using `supplier_id`.
+- [ ] Rename the material `description` field to `remarks` on create/update and read views.

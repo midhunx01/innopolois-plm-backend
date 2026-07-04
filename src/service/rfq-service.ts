@@ -79,7 +79,7 @@ const create = async (
         line_no: lineNo++,
         part_number: part.part_number,
         description: part.name,
-        specification: li.specification ?? part.description,
+        specification: li.specification ?? part.remarks,
         quantity: li.quantity.toString(),
         uom: part.uom,
         buying_notes: li.buying_notes ?? "",

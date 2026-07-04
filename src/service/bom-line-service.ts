@@ -73,7 +73,7 @@ const add = async (
     // Snapshot from the material.
     part_number: part.part_number,
     name: part.name,
-    description: part.description,
+    description: part.remarks,
     category: part.category,
     uom: part.uom,
     unit_cost: unitCost.toString(),

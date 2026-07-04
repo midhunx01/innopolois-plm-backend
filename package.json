@@ -1,6 +1,6 @@
 {
   "name": "innopolis-plm-backend",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Innopolis Bio Innovations — BOM & Procurement / PLM backend",
   "type": "module",
   "main": "dist/server.js",

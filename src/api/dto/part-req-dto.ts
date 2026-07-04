@@ -57,7 +57,7 @@ export const CreatePartDto = Type.Object(
         maxLength: "name must be at most 160 characters",
       },
     }),
-    description: Type.Optional(Type.String({ maxLength: 2000 })),
+    remarks: Type.Optional(Type.String({ maxLength: 2000 })),
     material: Type.Optional(Type.String({ maxLength: 120 })),
     finish: Type.Optional(Type.String({ maxLength: 120 })),
     revision: Type.Optional(Type.String({ maxLength: 16 })),

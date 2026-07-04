@@ -50,7 +50,7 @@ export const parts = pgTable(
 
     // ── Basic information (FRD §5) ──────────────────────────────────────────
     name: varchar("name", { length: 160 }).notNull(),
-    description: text("description").default("").notNull(),
+    remarks: text("remarks").default("").notNull(),
     material: varchar("material", { length: 120 }).default("").notNull(),
     finish: varchar("finish", { length: 120 }).default("").notNull(),
     revision: varchar("revision", { length: 16 }).default("A").notNull(),
