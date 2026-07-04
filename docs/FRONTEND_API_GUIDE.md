@@ -95,7 +95,7 @@ Error:
 
 ## 2. Roles & access (FRD §17)
 
-`Administrator · Engineering · Commercial · Purchase · Stores · Management`
+`Administrator · Engineering · Commercial · Purchase · Stores · Management · Project Manager`
 
 - **Administrator** bypasses all role checks (full access).
 - Reads are generally open to any authenticated user.
@@ -103,6 +103,12 @@ Error:
 - Some actions are **stage-gated** (BOM approval, PO status) — the allowed role
   depends on the record’s current state, enforced server-side; a `403`/`400`
   comes back if the current user/stage isn’t permitted.
+- **Project Manager** is scoped to the projects they’re assigned to
+  (`project.project_manager_id`). They see **only their** projects and BOMs
+  (list + detail auto-filtered; a foreign project/BOM returns `404`), and they
+  are the role that **releases a BOM for purchase**, sets each BOM line’s
+  **required-by date**, and **updates the project stage**. Material master /
+  BOM-explorer reads stay open to all authenticated users.
 
 Use roles to drive the sidebar/route guards (the mock `navForRole` already does
 this — keep that mapping).
@@ -319,15 +325,21 @@ Low Stock · Backorder · Out of Stock.
 
 ### Projects — `/api/projects` (writes: Engineering)
 **Create** (only `name` required): `{ name, customer?, family?, category?,
-description?, engineer_id?, stage?, lifecycle?, revision?, version?,
-target_cost?, quoted_price?, thumbnail_hue? }`. `project_number` auto =
-`INP-{year}-{seq}`.
+description?, engineer_id?, project_manager_id?, stage?, lifecycle?, revision?,
+version?, target_cost?, quoted_price?, thumbnail_hue? }`. `project_number` auto =
+`INP-{year}-{seq}`. Set `project_manager_id` to assign a **Project Manager**.
 **List** `GET /api/projects` *(paginated)*: `search`, `stage`, `customer`, `page`, `pageSize`.
 `GET/PATCH/DELETE /api/projects/:id`. **`GET /:id`** adds people fields:
-`owner_name/owner_initials/owner_hue` **and** `engineer_name/engineer_initials/engineer_hue`.
+`owner_*`, `engineer_*` **and** `manager_name/manager_initials/manager_hue`.
 **`stage`** (ProjectStage): Enquiry · Technical Evaluation · Quotation ·
 Project Order · Detailed Engineering · Final BOM · Purchase Release ·
 Procurement · Fulfilment · Completed.
+
+**Update stage** `PATCH /api/projects/:id/stage` → `{ "stage": <ProjectStage> }`
+(roles: **Project Manager**, Engineering). A Project Manager may only move a
+project they’re assigned to (else `403`); this is how the PM coordinates the
+project. For a Project Manager, `GET /api/projects` and `GET /:id` are
+**auto-scoped** to their assigned projects.
 
 ### BOMs — `/api/project-boms` (writes: Engineering)
 - `POST /` → `{ project_id, bom_type?, revision? }`. `number` auto = `BOM-{seq}`,
@@ -346,25 +358,33 @@ owner_id, created_at, updated_at` (+ `lines`, `audit` on detail).
 ### BOM lines
 - `POST /api/project-boms/:bomId/lines` (Engineering, BOM must be Draft):
   `{ part_id, quantity, vendor_id?, ref_designator?, remarks?, buying_notes?,
-  drawing_ref?, is_critical?, unit_cost? }`. The material is **snapshotted**
-  (part_number/name/cost/lead time copied); `extended_cost = quantity × unit_cost`.
+  drawing_ref?, is_critical?, unit_cost?, required_by_date? }`. The material is
+  **snapshotted** (part_number/name/cost/lead time copied);
+  `extended_cost = quantity × unit_cost`.
 - `GET /api/project-boms/:bomId/lines`
 - `PATCH /api/bom-lines/:id`, `DELETE /api/bom-lines/:id` (Engineering, Draft only)
+- **`PATCH /api/bom-lines/:id/required-date`** → `{ "required_by_date":
+  "YYYY-MM-DD" }` (roles: **Project Manager**, Engineering). The PM sets the
+  material required-by date per line; unlike other line edits this is allowed at
+  **any BOM stage** (planning metadata, not structure).
 
 **Line fields:** `id, bom_id, part_id, find_number, level, parent_line_id,
 part_number, name, description, category, uom, unit_cost, procurement,
 lead_time_days, material_revision, quantity, extended_cost, ref_designator,
-remarks, buying_notes, drawing_ref, vendor_id, is_critical`.
+remarks, buying_notes, drawing_ref, vendor_id, required_by_date, is_critical`.
 
 ### Approval workflow — `POST /api/project-boms/:id/transition`
 Body: `{ "action": "advance" | "reject", "comment": "..." }`
 ```
 Draft ─▶ Technical Review ─▶ Commercial Review ─▶ Approved ─▶ Released for Purchase
-(Engineering)   (Engineering)      (Commercial)      (Purchase)
+(Engineering)   (Engineering)      (Commercial)   (Purchase / Project Manager)
 ```
 - `advance` moves to the next stage; the role above must match the **current**
   stage (Administrator always allowed). Can’t submit an empty BOM; can’t advance
   past the last stage.
+- **Releasing for purchase** (advancing from `Approved`) may be done by
+  **Purchase** or the **Project Manager**; a Project Manager may only release
+  BOMs of their own projects (else `403`).
 - `reject` sends the BOM back to **Draft**.
 - Returns the updated BOM + `audit[]`. Each audit entry:
   `{ from_stage, to_stage, action, comment, user_id, created_at,

@@ -31,6 +31,9 @@ export const projects = pgTable(
 
     engineer_id: uuid("engineer_id").references(() => users.id),
     owner_id: uuid("owner_id").references(() => users.id),
+    // Project Manager who coordinates the project (FRD §17). Scopes what the
+    // Project Manager role can see and act on.
+    project_manager_id: uuid("project_manager_id").references(() => users.id),
 
     stage: projectStageEnum("stage").default("Enquiry").notNull(),
     lifecycle: lifecycleEnum("lifecycle").default("Concept").notNull(),

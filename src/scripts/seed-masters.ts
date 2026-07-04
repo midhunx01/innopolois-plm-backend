@@ -140,6 +140,7 @@ const USERS: {
   { name: "James Park", email: "purchase@innopolis.bio", password: "purchase123", role: "Purchase", team: "Purchase", initials: "JP", hue: 210 },
   { name: "Raj Patel", email: "stores@innopolis.bio", password: "stores123", role: "Stores", team: "Stores", initials: "RP", hue: 152 },
   { name: "Hannah Berg", email: "management@innopolis.bio", password: "management123", role: "Management", team: "Management", initials: "HB", hue: 320 },
+  { name: "Lena Fischer", email: "pm@innopolis.bio", password: "pm123456", role: "Project Manager", team: "Projects", initials: "LF", hue: 258 },
 ];
 
 // Representative vendor master (FRD §7), mirroring the frontend supplier pool.

@@ -8,6 +8,7 @@ export const userRoleEnum = pgEnum("user_role", [
   "Purchase",
   "Stores",
   "Management",
+  "Project Manager",
 ]);
 export type Role = (typeof userRoleEnum.enumValues)[number];
 

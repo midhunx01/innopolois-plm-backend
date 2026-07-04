@@ -58,6 +58,9 @@ export const listBoms = async (
       pageSize,
       projectId: typeof q.projectId === "string" ? q.projectId : undefined,
       stage: typeof q.stage === "string" ? (q.stage as BomStage) : undefined,
+      // A Project Manager only sees BOMs of the projects assigned to them.
+      managerId:
+        req.auth?.role === "Project Manager" ? req.auth.id : undefined,
     };
     const { rows, total } = await projectBomService.list(filters, projectBomRepo);
     ApiResponse.paginated(res, "BOMs retrieved", rows, { page, pageSize, total });
@@ -75,7 +78,14 @@ export const getBom = async (
   try {
     const idValidation = ValidateRequest(req.params.id, UuidString);
     if (!idValidation.valid) throw new ValidationError(idValidation.error);
-    const result = await projectBomService.getDetail(idValidation.data, deps);
+    const viewer = req.auth
+      ? { id: req.auth.id, role: req.auth.role }
+      : undefined;
+    const result = await projectBomService.getDetail(
+      idValidation.data,
+      deps,
+      viewer
+    );
     ApiResponse.success(res, 200, "BOM retrieved", result);
   } catch (error) {
     next(error);

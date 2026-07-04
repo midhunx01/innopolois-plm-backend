@@ -1,10 +1,20 @@
-import { and, desc, eq, getTableColumns, isNull, sql, SQL } from "drizzle-orm";
+import {
+  and,
+  desc,
+  eq,
+  getTableColumns,
+  inArray,
+  isNull,
+  sql,
+  SQL,
+} from "drizzle-orm";
 import { DB } from "../db/db-connection";
 import {
   BomStage,
   NewProjectBom,
   ProjectBom,
   projectBoms,
+  projects,
   users,
 } from "../db/schema";
 import { logger } from "../util";
@@ -20,6 +30,8 @@ export type ProjectBomWithOwner = ProjectBom & {
 export interface ProjectBomFilters {
   projectId?: string;
   stage?: BomStage;
+  // When set, restrict to BOMs whose project this Project Manager is assigned to.
+  managerId?: string;
   page: number;
   pageSize: number;
 }
@@ -43,6 +55,15 @@ const buildWhere = (filters: ProjectBomFilters): SQL | undefined => {
   if (filters.projectId)
     clauses.push(eq(projectBoms.project_id, filters.projectId));
   if (filters.stage) clauses.push(eq(projectBoms.stage, filters.stage));
+  if (filters.managerId)
+    clauses.push(
+      inArray(
+        projectBoms.project_id,
+        DB.select({ id: projects.id })
+          .from(projects)
+          .where(eq(projects.project_manager_id, filters.managerId))
+      )
+    );
   return and(...clauses);
 };
 

@@ -23,12 +23,17 @@ export type ProjectWithPeople = Project & {
   engineer_name: string | null;
   engineer_initials: string | null;
   engineer_hue: number | null;
+  manager_name: string | null;
+  manager_initials: string | null;
+  manager_hue: number | null;
 };
 
 export interface ProjectFilters {
   search?: string; // number / name / customer
   stage?: ProjectStage;
   customer?: string;
+  // When set, restrict the list to projects this Project Manager is assigned to.
+  managerId?: string;
   page: number;
   pageSize: number;
 }
@@ -55,6 +60,8 @@ const buildWhere = (filters: ProjectFilters): SQL | undefined => {
   }
   if (filters.stage) clauses.push(eq(projects.stage, filters.stage));
   if (filters.customer) clauses.push(eq(projects.customer, filters.customer));
+  if (filters.managerId)
+    clauses.push(eq(projects.project_manager_id, filters.managerId));
   return and(...clauses);
 };
 
@@ -72,6 +79,7 @@ const findById = async (id: string): Promise<ProjectWithPeople | null> => {
   try {
     const owner = alias(users, "owner");
     const engineer = alias(users, "engineer");
+    const manager = alias(users, "manager");
     const [row] = await DB
       .select({
         ...getTableColumns(projects),
@@ -81,10 +89,14 @@ const findById = async (id: string): Promise<ProjectWithPeople | null> => {
         engineer_name: engineer.name,
         engineer_initials: engineer.initials,
         engineer_hue: engineer.hue,
+        manager_name: manager.name,
+        manager_initials: manager.initials,
+        manager_hue: manager.hue,
       })
       .from(projects)
       .leftJoin(owner, eq(owner.id, projects.owner_id))
       .leftJoin(engineer, eq(engineer.id, projects.engineer_id))
+      .leftJoin(manager, eq(manager.id, projects.project_manager_id))
       .where(and(eq(projects.id, id), isNull(projects.deleted_at)))
       .limit(1);
     return row ?? null;

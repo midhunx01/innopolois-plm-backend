@@ -8,7 +8,11 @@ import { ApiResponse } from "../../util/global/response";
 import { parsePagination } from "../../util/types/pagination-types";
 import { ValidateRequest } from "../../util/validator";
 import { UuidString } from "../dto/global-req-dto";
-import { CreateProjectDto, UpdateProjectDto } from "../dto/project-req-dto";
+import {
+  CreateProjectDto,
+  UpdateProjectDto,
+  UpdateProjectStageDto,
+} from "../dto/project-req-dto";
 
 const projectRepo = repository.projectRepo;
 const projectService = service.projectService;
@@ -48,6 +52,9 @@ export const listProjects = async (
       search: typeof q.search === "string" ? q.search : undefined,
       stage: typeof q.stage === "string" ? (q.stage as ProjectStage) : undefined,
       customer: typeof q.customer === "string" ? q.customer : undefined,
+      // A Project Manager only sees the projects assigned to them.
+      managerId:
+        req.auth?.role === "Project Manager" ? req.auth.id : undefined,
     };
     const { rows, total } = await projectService.list(filters, projectRepo);
     ApiResponse.paginated(res, "Projects retrieved", rows, {
@@ -68,7 +75,14 @@ export const getProject = async (
   try {
     const idValidation = ValidateRequest(req.params.id, UuidString);
     if (!idValidation.valid) throw new ValidationError(idValidation.error);
-    const result = await projectService.getById(idValidation.data, projectRepo);
+    const viewer = req.auth
+      ? { id: req.auth.id, role: req.auth.role }
+      : undefined;
+    const result = await projectService.getById(
+      idValidation.data,
+      projectRepo,
+      viewer
+    );
     ApiResponse.success(res, 200, "Project retrieved", result);
   } catch (error) {
     next(error);
@@ -91,6 +105,29 @@ export const updateProject = async (
       projectRepo
     );
     ApiResponse.success(res, 200, "Project updated", result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateProjectStage = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const idValidation = ValidateRequest(req.params.id, UuidString);
+    if (!idValidation.valid) throw new ValidationError(idValidation.error);
+    const bodyValidation = ValidateRequest(req.body, UpdateProjectStageDto);
+    if (!bodyValidation.valid) throw new ValidationError(bodyValidation.error);
+    if (!req.auth) throw new AuthenticationError("Authentication required");
+    const result = await projectService.updateStage(
+      idValidation.data,
+      bodyValidation.data.stage,
+      { id: req.auth.id, role: req.auth.role },
+      projectRepo
+    );
+    ApiResponse.success(res, 200, "Project stage updated", result);
   } catch (error) {
     next(error);
   }

@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-04 · **Audience:** Frontend developer · **Backend version:** 1.0.1
 
-Six backend updates change the API contract. Each is summarized here with exactly what the frontend needs to do.
+Seven backend updates change the API contract. Each is summarized here with exactly what the frontend needs to do.
 
 - **Part A — User attribution (audit trail & owners):** person names now come back on the record itself; stop resolving them via the admin-only users list.
 - **Part B — PO receipt & status (bug F1):** `Received` can no longer be faked; the receive call now requires a warehouse.
@@ -10,8 +10,9 @@ Six backend updates change the API contract. Each is summarized here with exactl
 - **Part D — Material `description` renamed to `remarks`.**
 - **Part E — Multiple resource specs per material:** new `resource_specs` master + `resource_spec_ids[]` on materials.
 - **Part F — Purchase-price history:** `last_purchase_price` auto-updates on goods receipt; new `last_purchase_date` + price-history endpoint.
+- **Part G — Project Manager role:** new scoped role; `project_manager_id` on projects, `required_by_date` on BOM lines, project-stage + line required-date endpoints.
 
-Parts A and B are **live after a server rebuild/restart**. **Parts C, D, E and F require a database migration** (`npm run db:push`) — see those sections.
+Parts A and B are **live after a server rebuild/restart**. **Parts C, D, E, F and G require a database migration** (`npm run db:push`) — see those sections.
 
 ---
 
@@ -264,6 +265,38 @@ Newest first.
 
 ---
 
+## Part G · Project Manager role
+
+### What changed — ⚠️ new role + requires a DB migration
+A new **`Project Manager`** role joins the set. It is scoped to the projects it
+is assigned to (`projects.project_manager_id`) and coordinates them.
+
+**New / changed fields**
+- `projects.project_manager_id` (assign via `POST` / `PATCH /api/projects`);
+  `GET /api/projects/:id` also returns `manager_name/manager_initials/manager_hue`.
+- `bom_lines.required_by_date` (`YYYY-MM-DD` or `null`).
+
+**A Project Manager (only on their assigned projects):**
+- Sees **only their** projects & BOMs — `GET /api/projects` and
+  `GET /api/project-boms` are auto-filtered; a foreign `:id` returns **404**.
+- **Releases a BOM for purchase** — `POST /api/project-boms/:id/transition`
+  `{ "action": "advance" }` from the `Approved` stage (Purchase may also).
+- Sets each line’s **required-by date** — `PATCH /api/bom-lines/:id/required-date`
+  `{ "required_by_date": "YYYY-MM-DD" }` (allowed at any BOM stage).
+- **Updates the project stage** — `PATCH /api/projects/:id/stage`
+  `{ "stage": <ProjectStage> }`.
+
+Acting on a non-assigned project/BOM returns **403**. Material master and
+BOM-explorer reads remain open to all authenticated users.
+
+### Frontend action
+1. Add `Project Manager` to the role picker + sidebar/route-guard map.
+2. Add a project **PM assignment** control (`project_manager_id`).
+3. Wire the PM actions: release-for-purchase, project stage, per-line required-by date.
+4. For a logged-in PM, render project/BOM lists as returned (already scoped).
+
+---
+
 ## Quick checklist
 
 - [ ] Read actor/owner names from the record fields; remove the `GET /api/users` lookup for name resolution.
@@ -275,3 +308,4 @@ Newest first.
 - [ ] Rename the material `description` field to `remarks` on create/update and read views.
 - [ ] Add a material resource-spec multi-select from `GET /api/resource-specs`, submit `resource_spec_ids[]`.
 - [ ] Show `last_purchase_date` + a price-history view (`GET /api/parts/:id/price-history`); treat `last_purchase_price` as system-maintained.
+- [ ] Add the **Project Manager** role (picker + nav guard), project PM assignment, and PM actions (BOM release, project stage, line required-by date).

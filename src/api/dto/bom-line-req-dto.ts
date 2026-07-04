@@ -26,6 +26,13 @@ export const CreateBomLineDto = Type.Object(
     is_critical: Type.Optional(Type.Boolean()),
     // Optional per-line cost override; defaults to the material's unit cost.
     unit_cost: Type.Optional(Type.Number({ minimum: 0 })),
+    // Date the material is required by (YYYY-MM-DD).
+    required_by_date: Type.Optional(
+      Type.String({
+        format: "date",
+        errorMessage: { format: "required_by_date must be a date (YYYY-MM-DD)" },
+      })
+    ),
   },
   {
     additionalProperties: false,
@@ -51,5 +58,25 @@ export const UpdateBomLineDto = Type.Partial(
   }
 );
 
+// Dedicated payload for the Project Manager setting a line's required-by date
+// (allowed outside Draft — it's procurement planning metadata, not structure).
+export const SetRequiredDateDto = Type.Object(
+  {
+    required_by_date: Type.String({
+      format: "date",
+      errorMessage: { format: "required_by_date must be a date (YYYY-MM-DD)" },
+    }),
+  },
+  {
+    additionalProperties: false,
+    required: ["required_by_date"],
+    errorMessage: {
+      required: { required_by_date: "required_by_date is required" },
+      additionalProperties: "Unexpected fields in required-date request",
+    },
+  }
+);
+
 export type CreateBomLineDtoType = Static<typeof CreateBomLineDto>;
 export type UpdateBomLineDtoType = Static<typeof UpdateBomLineDto>;
+export type SetRequiredDateDtoType = Static<typeof SetRequiredDateDto>;

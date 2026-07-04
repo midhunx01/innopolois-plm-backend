@@ -3,13 +3,23 @@ import {
   CreateProjectDtoType,
   UpdateProjectDtoType,
 } from "../api/dto/project-req-dto";
-import { NewProject } from "../db/schema";
+import { NewProject, ProjectStage, Role } from "../db/schema";
 import {
   CounterRepoType,
   ProjectFilters,
   ProjectRepoType,
 } from "../repository";
-import { NotFoundError, ValidationError } from "../util/error";
+import { AuthorizeError, NotFoundError, ValidationError } from "../util/error";
+
+export type Viewer = { id: string; role: Role };
+
+// A Project Manager may only see/act on the projects they are assigned to.
+const isForeignToManager = (
+  project: { project_manager_id: string | null },
+  viewer?: Viewer
+): boolean =>
+  viewer?.role === "Project Manager" &&
+  project.project_manager_id !== viewer.id;
 
 export interface ProjectServiceDeps {
   projectRepo: ProjectRepoType;
@@ -38,6 +48,7 @@ const create = async (
     description: dto.description ?? "",
     engineer_id: dto.engineer_id ?? ownerId,
     owner_id: ownerId,
+    project_manager_id: dto.project_manager_id ?? null,
     stage: dto.stage ?? "Enquiry",
     lifecycle: dto.lifecycle ?? "Concept",
     revision: dto.revision ?? "A",
@@ -56,10 +67,35 @@ const create = async (
 const list = async (filters: ProjectFilters, projectRepo: ProjectRepoType) =>
   projectRepo.list(filters);
 
-const getById = async (id: string, projectRepo: ProjectRepoType) => {
+const getById = async (
+  id: string,
+  projectRepo: ProjectRepoType,
+  viewer?: Viewer
+) => {
+  const project = await projectRepo.findById(id);
+  // Hide (not 403) projects a Project Manager isn't assigned to.
+  if (!project || isForeignToManager(project, viewer)) {
+    throw new NotFoundError("Project not found");
+  }
+  return project;
+};
+
+// Coordinate the project by moving its lifecycle stage (FRD §1). A Project
+// Manager may only advance their own projects; Engineering/Admin any.
+const updateStage = async (
+  id: string,
+  stage: ProjectStage,
+  viewer: Viewer,
+  projectRepo: ProjectRepoType
+) => {
   const project = await projectRepo.findById(id);
   if (!project) throw new NotFoundError("Project not found");
-  return project;
+  if (isForeignToManager(project, viewer)) {
+    throw new AuthorizeError("You are not the Project Manager for this project");
+  }
+  const updated = await projectRepo.update(id, { stage });
+  if (!updated) throw new ValidationError("Failed to update project stage");
+  return updated;
 };
 
 const update = async (
@@ -96,6 +132,7 @@ export const projectService = {
   create,
   list,
   getById,
+  updateStage,
   update,
   remove,
 };

@@ -8,6 +8,7 @@ const Role = Type.Union(
     Type.Literal("Purchase"),
     Type.Literal("Stores"),
     Type.Literal("Management"),
+    Type.Literal("Project Manager"),
   ],
   { errorMessage: { type: "role is invalid" } }
 );

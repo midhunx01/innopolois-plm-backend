@@ -46,6 +46,9 @@ export const CreateProjectDto = Type.Object(
     engineer_id: Type.Optional(
       Type.String({ format: "uuid", errorMessage: { format: "engineer_id must be a UUID" } })
     ),
+    project_manager_id: Type.Optional(
+      Type.String({ format: "uuid", errorMessage: { format: "project_manager_id must be a UUID" } })
+    ),
     stage: Type.Optional(ProjectStage),
     lifecycle: Type.Optional(Lifecycle),
     revision: Type.Optional(Type.String({ maxLength: 16 })),
@@ -72,5 +75,19 @@ export const UpdateProjectDto = Type.Partial(CreateProjectDto, {
   },
 });
 
+// Dedicated stage-change payload (project coordination — PM / Engineering).
+export const UpdateProjectStageDto = Type.Object(
+  { stage: ProjectStage },
+  {
+    additionalProperties: false,
+    required: ["stage"],
+    errorMessage: {
+      required: { stage: "stage is required" },
+      additionalProperties: "Unexpected fields in project-stage request",
+    },
+  }
+);
+
 export type CreateProjectDtoType = Static<typeof CreateProjectDto>;
 export type UpdateProjectDtoType = Static<typeof UpdateProjectDto>;
+export type UpdateProjectStageDtoType = Static<typeof UpdateProjectStageDto>;

@@ -89,6 +89,7 @@ const add = async (
     buying_notes: dto.buying_notes ?? "",
     drawing_ref: dto.drawing_ref ?? part.drawing_ref,
     vendor_id: dto.vendor_id ?? preferredVendorIds[0] ?? null,
+    required_by_date: dto.required_by_date ?? null,
     is_critical: dto.is_critical ?? false,
   };
 
@@ -126,6 +127,8 @@ const update = async (
   if (dto.drawing_ref !== undefined) patch.drawing_ref = dto.drawing_ref;
   if (dto.is_critical !== undefined) patch.is_critical = dto.is_critical;
   if (dto.vendor_id !== undefined) patch.vendor_id = dto.vendor_id;
+  if (dto.required_by_date !== undefined)
+    patch.required_by_date = dto.required_by_date;
 
   // Recompute extended cost if quantity or unit_cost changed.
   const quantity = dto.quantity ?? Number(line.quantity);
@@ -155,9 +158,28 @@ const remove = async (lineId: string, deps: BomLineServiceDeps) => {
   return { message: "BOM line removed successfully" };
 };
 
+// Project Manager sets the required-by date on a line. Unlike structural edits,
+// this is procurement-planning metadata and is allowed at any BOM stage (the PM
+// schedules materials around release, not only in Draft).
+const setRequiredDate = async (
+  lineId: string,
+  requiredByDate: string,
+  deps: BomLineServiceDeps
+) => {
+  const line = await deps.bomLineRepo.findById(lineId);
+  if (!line) throw new NotFoundError("BOM line not found");
+
+  const updated = await deps.bomLineRepo.update(lineId, {
+    required_by_date: requiredByDate,
+  });
+  if (!updated) throw new ValidationError("Failed to set required-by date");
+  return updated;
+};
+
 export const bomLineService = {
   add,
   listByBom,
   update,
+  setRequiredDate,
   remove,
 };

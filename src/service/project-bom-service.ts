@@ -37,7 +37,7 @@ const STAGE_ACTOR: Partial<Record<BomStage, Role[]>> = {
   Draft: ["Engineering"], // submit for technical review
   "Technical Review": ["Engineering"], // technical sign-off
   "Commercial Review": ["Commercial"], // commercial sign-off
-  Approved: ["Purchase"], // release for purchase
+  Approved: ["Purchase", "Project Manager"], // release for purchase
   // "Released for Purchase" is terminal — no further transitions.
 };
 
@@ -107,9 +107,20 @@ const getById = async (id: string, repo: ProjectBomRepoType) => {
 };
 
 /** Detail view: BOM + its lines + full approval audit trail. */
-const getDetail = async (id: string, deps: ProjectBomServiceDeps) => {
+const getDetail = async (
+  id: string,
+  deps: ProjectBomServiceDeps,
+  viewer?: { id: string; role: Role }
+) => {
   const bom = await deps.projectBomRepo.findById(id);
   if (!bom) throw new NotFoundError("BOM not found");
+  // A Project Manager may only open BOMs of their own projects.
+  if (viewer?.role === "Project Manager") {
+    const project = await deps.projectRepo.findById(bom.project_id);
+    if (!project || project.project_manager_id !== viewer.id) {
+      throw new NotFoundError("BOM not found");
+    }
+  }
   const [lines, audit] = await Promise.all([
     deps.bomLineRepo.listByBom(id),
     deps.bomAuditRepo.listByBom(id),
@@ -144,6 +155,16 @@ const transition = async (
 
   const current = bom.stage;
   assertActor(current, user.role);
+
+  // A Project Manager may only release/transition BOMs of their own projects.
+  if (user.role === "Project Manager") {
+    const project = await deps.projectRepo.findById(bom.project_id);
+    if (!project || project.project_manager_id !== user.id) {
+      throw new AuthorizeError(
+        "You are not the Project Manager for this BOM's project"
+      );
+    }
+  }
 
   let nextStage: BomStage;
   if (dto.action === "advance") {

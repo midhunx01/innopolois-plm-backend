@@ -7,6 +7,7 @@ import {
   numeric,
   boolean,
   timestamp,
+  date,
   index,
 } from "drizzle-orm/pg-core";
 import { InferInsertModel, InferSelectModel } from "drizzle-orm";
@@ -65,6 +66,9 @@ export const bomLines = pgTable(
     drawing_ref: varchar("drawing_ref", { length: 120 }).default("").notNull(),
     // Selected vendor for this line (specific/general — FRD §9, procedure p5).
     vendor_id: uuid("vendor_id").references(() => suppliers.id),
+    // Date the material is required by (set by the Project Manager during
+    // procurement planning). Calendar date, nullable until scheduled.
+    required_by_date: date("required_by_date"),
     is_critical: boolean("is_critical").default(false).notNull(),
 
     created_at: timestamp("created_at", { withTimezone: true })

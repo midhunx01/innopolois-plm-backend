@@ -30,7 +30,8 @@ FROM (VALUES
   ('Omar Haddad',   'commercial@innopolis.bio',  'commercial123', 'Commercial',    'Commercial',  'OH', 38),
   ('James Park',    'purchase@innopolis.bio',    'purchase123',   'Purchase',      'Purchase',    'JP', 210),
   ('Raj Patel',     'stores@innopolis.bio',      'stores123',     'Stores',        'Stores',      'RP', 152),
-  ('Hannah Berg',   'management@innopolis.bio',  'management123', 'Management',    'Management',  'HB', 320)
+  ('Hannah Berg',   'management@innopolis.bio',  'management123', 'Management',    'Management',  'HB', 320),
+  ('Lena Fischer',  'pm@innopolis.bio',          'pm123456',      'Project Manager', 'Projects',  'LF', 258)
 ) AS v(name, email, pwd, role, team, initials, hue)
 WHERE NOT EXISTS (SELECT 1 FROM users u WHERE u.email = v.email);
 

@@ -70,6 +70,10 @@
       "value": ""
     },
     {
+      "key": "pmUserId",
+      "value": ""
+    },
+    {
       "key": "bomId",
       "value": ""
     },
@@ -128,7 +132,7 @@
                 "login"
               ]
             },
-            "description": "Sets {{token}} for all other requests. Try other demo logins: admin@innopolis.bio/admin123, purchase@…/purchase123, commercial@…/commercial123, stores@…/stores123, management@…/management123.",
+            "description": "Sets {{token}} for all other requests. Try other demo logins: admin@innopolis.bio/admin123, purchase@…/purchase123, commercial@…/commercial123, stores@…/stores123, management@…/management123, pm@innopolis.bio/pm123456 (Project Manager).",
             "auth": {
               "type": "noauth"
             },
@@ -1841,6 +1845,73 @@
               }
             },
             {
+              "name": "Assign Project Manager (Engineering)",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/projects/{{projectId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "projects",
+                    "{{projectId}}"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"project_manager_id\": \"{{pmUserId}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "Assign the Project Manager who coordinates this project. Set {{pmUserId}} first (from GET /api/users as admin, or the id of pm@innopolis.bio). The PM then sees only their projects/BOMs, releases the BOM for purchase, sets line required-by dates, and updates the project stage."
+              }
+            },
+            {
+              "name": "Update project stage (PM / Engineering)",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/projects/{{projectId}}/stage",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "projects",
+                    "{{projectId}}",
+                    "stage"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"stage\": \"Purchase Release\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "The assigned Project Manager (or Engineering) moves the project lifecycle stage. A PM may only move their own projects (else 403). Log in as pm@innopolis.bio to test the PM path."
+              }
+            },
+            {
               "name": "Delete project (Engineering)",
               "request": {
                 "method": "DELETE",
@@ -2016,7 +2087,7 @@
                 },
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"part_id\": \"{{partId}}\",\n  \"quantity\": 4,\n  \"vendor_id\": \"{{supplierId}}\",\n  \"is_critical\": true,\n  \"buying_notes\": \"PN class 150\"\n}",
+                  "raw": "{\n  \"part_id\": \"{{partId}}\",\n  \"quantity\": 4,\n  \"vendor_id\": \"{{supplierId}}\",\n  \"is_critical\": true,\n  \"buying_notes\": \"PN class 150\",\n  \"required_by_date\": \"2026-09-15\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -2087,6 +2158,40 @@
                     }
                   }
                 }
+              }
+            },
+            {
+              "name": "Set line required-by date (PM / Engineering)",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/bom-lines/{{bomLineId}}/required-date",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "bom-lines",
+                    "{{bomLineId}}",
+                    "required-date"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"required_by_date\": \"2026-09-15\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "description": "Project Manager sets the material required-by date on a line. Unlike other line edits this works at ANY BOM stage (not just Draft). Log in as pm@innopolis.bio to test the PM path."
               }
             },
             {

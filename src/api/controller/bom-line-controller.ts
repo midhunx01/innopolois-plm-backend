@@ -5,7 +5,11 @@ import { ValidationError } from "../../util/error";
 import { ApiResponse } from "../../util/global/response";
 import { ValidateRequest } from "../../util/validator";
 import { UuidString } from "../dto/global-req-dto";
-import { CreateBomLineDto, UpdateBomLineDto } from "../dto/bom-line-req-dto";
+import {
+  CreateBomLineDto,
+  SetRequiredDateDto,
+  UpdateBomLineDto,
+} from "../dto/bom-line-req-dto";
 
 const bomLineService = service.bomLineService;
 
@@ -68,6 +72,29 @@ export const updateLine = async (
       deps
     );
     ApiResponse.success(res, 200, "BOM line updated", result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// PATCH /api/bom-lines/:id/required-date — Project Manager sets the required-by
+// date on a line (allowed at any BOM stage).
+export const setLineRequiredDate = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const idValidation = ValidateRequest(req.params.id, UuidString);
+    if (!idValidation.valid) throw new ValidationError(idValidation.error);
+    const bodyValidation = ValidateRequest(req.body, SetRequiredDateDto);
+    if (!bodyValidation.valid) throw new ValidationError(bodyValidation.error);
+    const result = await bomLineService.setRequiredDate(
+      idValidation.data,
+      bodyValidation.data.required_by_date,
+      deps
+    );
+    ApiResponse.success(res, 200, "Required-by date updated", result);
   } catch (error) {
     next(error);
   }

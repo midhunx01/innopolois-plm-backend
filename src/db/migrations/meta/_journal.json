@@ -43,6 +43,13 @@
       "when": 1783147572147,
       "tag": "0005_rich_eternity",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1783150257714,
+      "tag": "0006_melodic_betty_ross",
+      "breakpoints": true
     }
   ]
 }

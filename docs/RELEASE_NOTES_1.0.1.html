@@ -62,15 +62,15 @@
 <header>
   <div class="eyebrow">Innopolis Bio Innovations · PLM Platform</div>
   <h1>Release Notes — v1.0.1</h1>
-  <div class="sub">Frontend developer · 2026-07-04 · Vendors, resource specs, price history &amp; material <code>remarks</code></div>
+  <div class="sub">Frontend developer · 2026-07-04 · Material Master updates &amp; new Project Manager role</div>
 </header>
 
 <p><strong>Release date:</strong> 2026-07-04
 <strong>Backend version:</strong> 1.0.1
 <strong>Audience:</strong> Frontend developer</p>
-<p>This release changes the <strong>Material Master</strong> API contract in four ways — two
-breaking field changes plus two new features. This doc is the frontend action
-list: what the API now sends/expects, and what to change in the UI.</p>
+<p>This release covers <strong>Material Master</strong> API changes (four) <strong>plus a new
+Project Manager role</strong> (§5). This doc is the frontend action list: what the API
+now sends/expects, and what to change in the UI.</p>
 <blockquote>
 <p>These changes are live once the <strong>backend v1.0.1 is deployed</strong>. Coordinate the
 UI merge with that deploy — an old UI against v1.0.1 will send the removed
@@ -106,12 +106,19 @@ UI merge with that deploy — an old UI against v1.0.1 will send the removed
 <td><strong>Purchase-price history</strong> + auto-updating <code>last_purchase_price</code>/<code>date</code></td>
 <td>Show <code>last_purchase_date</code>; add a price-history view</td>
 </tr>
+<tr>
+<td>5</td>
+<td>New <strong>Project Manager</strong> role (scoped projects, BOM release, line dates, stage)</td>
+<td>Add PM login/nav + the new project/BOM-line endpoints</td>
+</tr>
 </tbody></table>
 <p>Affected endpoints: <code>POST /api/parts</code>, <code>PATCH /api/parts/:id</code>,
 <code>GET /api/parts/:id</code>, <code>GET /api/parts</code>, the new <code>GET /api/resource-specs</code>
 master (dropdown source), and the new <code>GET /api/parts/:id/price-history</code>.
 Goods receipt (<code>POST /api/purchase-orders/:id/receive</code>) now also updates the
-material price. No other module changed.</p>
+material price. §5 adds <code>PATCH /api/projects/:id/stage</code> and
+<code>PATCH /api/bom-lines/:id/required-date</code>, plus a <code>project_manager_id</code> on
+projects and a <code>required_by_date</code> on BOM lines.</p>
 <hr>
 <h2>1. Multiple preferred vendors per material</h2>
 <p>A material used to carry a single preferred vendor (<code>supplier_id</code>). It now
@@ -343,6 +350,67 @@ next to <code>last_purchase_price</code>.</p>
 + last_purchase_vendor: Vendor | null   // resolved, on single-material reads
 </code></pre>
 <hr>
+<h2>5. New role: Project Manager</h2>
+<p>A new user role <strong><code>Project Manager</code></strong> joins the existing set (Administrator,
+Engineering, Commercial, Purchase, Stores, Management). It is <strong>scoped to the
+projects it is assigned to</strong> and owns project coordination.</p>
+<h3>Assignment</h3>
+<p>Projects gain a <strong><code>project_manager_id</code></strong> field. Set it on create/update
+(<code>POST</code> / <code>PATCH /api/projects</code>) to assign the PM. <code>GET /api/projects/:id</code> now
+also returns <code>manager_name</code> / <code>manager_initials</code> / <code>manager_hue</code>.</p>
+<h3>What a Project Manager can do</h3>
+<table>
+<thead>
+<tr>
+<th>Capability</th>
+<th>Endpoint</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>See <strong>only their</strong> projects &amp; BOMs</td>
+<td><code>GET /api/projects</code>, <code>GET /api/project-boms</code> auto-filtered; foreign <code>:id</code> → <strong>404</strong></td>
+</tr>
+<tr>
+<td><strong>Release a BOM for purchase</strong></td>
+<td><code>POST /api/project-boms/:id/transition</code> <code>{ &quot;action&quot;:&quot;advance&quot; }</code> from the <code>Approved</code> stage (also allowed: Purchase)</td>
+</tr>
+<tr>
+<td>Set each line’s <strong>required-by date</strong></td>
+<td><code>PATCH /api/bom-lines/:id/required-date</code> <code>{ &quot;required_by_date&quot;:&quot;YYYY-MM-DD&quot; }</code> — works at <strong>any</strong> BOM stage</td>
+</tr>
+<tr>
+<td><strong>Update the project stage</strong></td>
+<td><code>PATCH /api/projects/:id/stage</code> <code>{ &quot;stage&quot;: &lt;ProjectStage&gt; }</code></td>
+</tr>
+</tbody></table>
+<p>A PM may only act on projects/BOMs they’re assigned to (else <strong>403</strong>). Material
+master and BOM-explorer reads stay open to all authenticated users.</p>
+<h3>New fields</h3>
+<ul>
+<li><code>Project</code>: <code>project_manager_id</code> (+ <code>manager_*</code> on detail reads).</li>
+<li><code>BomLine</code>: <code>required_by_date</code> (<code>YYYY-MM-DD</code> or <code>null</code>).</li>
+</ul>
+<h3>UI work</h3>
+<ul>
+<li>Add <strong>Project Manager</strong> to the role picker (user management) and the
+sidebar/route guard map (<code>navForRole</code>).</li>
+<li>Add a PM assignment control on the project form (<code>project_manager_id</code>).</li>
+<li>For a logged-in PM, the project/BOM lists are already scoped — no client
+filtering needed; just render what returns.</li>
+<li>Add a <strong>release-for-purchase</strong> action (BOM at <code>Approved</code>) and a <strong>project
+stage</strong> control for the PM.</li>
+<li>Add a <strong>required-by date</strong> field per BOM line (PM-editable at any stage).</li>
+</ul>
+<h3>Type changes</h3>
+<pre><code class="language-diff">// Role
++ &quot;Project Manager&quot;
+// Project
++ project_manager_id: string | null
++ manager_name / manager_initials / manager_hue   // detail reads
+// BomLine
++ required_by_date: string | null                 // YYYY-MM-DD
+</code></pre>
+<hr>
 <h2>Migration checklist (frontend)</h2>
 <ul>
 <li><input disabled="" type="checkbox"> Material form: vendor picker → <strong>multi-select</strong>, submit <code>vendor_ids: string[]</code>.</li>
@@ -353,6 +421,8 @@ next to <code>last_purchase_price</code>.</p>
 <li><input disabled="" type="checkbox"> Material detail: render resource specs from <code>resource_specs</code>.</li>
 <li><input disabled="" type="checkbox"> Update the <code>Part</code> type/interface (<code>vendor_ids</code>, <code>preferred_vendors</code>, <code>remarks</code>, <code>resource_spec_ids</code>, <code>resource_specs</code>, <code>last_purchase_date</code>).</li>
 <li><input disabled="" type="checkbox"> Show <code>last_purchase_date</code> and add a price-history view from <code>GET /api/parts/:id/price-history</code>; treat <code>last_purchase_price</code> as system-maintained.</li>
+<li><input disabled="" type="checkbox"> Add <strong>Project Manager</strong> to the role picker + <code>navForRole</code>; add project PM assignment (<code>project_manager_id</code>).</li>
+<li><input disabled="" type="checkbox"> Wire PM actions: release-for-purchase (BOM <code>Approved</code>), project stage (<code>PATCH /projects/:id/stage</code>), and per-line required-by date (<code>PATCH /bom-lines/:id/required-date</code>).</li>
 <li><input disabled="" type="checkbox"> Ship the UI <strong>together with</strong> the backend v1.0.1 deploy.</li>
 </ul>
 <hr>

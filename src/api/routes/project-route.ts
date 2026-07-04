@@ -10,6 +10,13 @@ router.use(authenticate);
 router.post("/", authorize("Engineering"), projectController.createProject);
 router.get("/", projectController.listProjects);
 router.get("/:id", projectController.getProject);
+// Project coordination: the assigned Project Manager (or Engineering) moves the
+// project lifecycle stage. Assignment scope is enforced in the service.
+router.patch(
+  "/:id/stage",
+  authorize("Project Manager", "Engineering"),
+  projectController.updateProjectStage
+);
 router.patch("/:id", authorize("Engineering"), projectController.updateProject);
 router.delete("/:id", authorize("Engineering"), projectController.deleteProject);
 
