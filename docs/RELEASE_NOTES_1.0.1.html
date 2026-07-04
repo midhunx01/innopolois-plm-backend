@@ -197,6 +197,11 @@ backed by a master list.</p>
 </code></pre>
 <p>Admin-managed CRUD (create/update/delete are Administrator-only), same shape as
 Units/Grades. Use <code>GET</code> to populate the resource-spec multi-select.</p>
+<blockquote>
+<p><strong>Delete guard:</strong> <code>DELETE /api/resource-specs/:id</code> returns <strong>409</strong> if the spec
+is still assigned to any material — unassign it from those materials first.
+Handle this error in the admin UI.</p>
+</blockquote>
 <h3>Request — create / update</h3>
 <pre><code class="language-jsonc">// POST / PATCH /api/parts
 {

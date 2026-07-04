@@ -4,7 +4,10 @@ import {
   UpdateResourceSpecDtoType,
 } from "../api/dto/resource-spec-req-dto";
 import { NewResourceSpec } from "../db/schema";
-import { ResourceSpecRepoType } from "../repository";
+import {
+  PartResourceSpecRepoType,
+  ResourceSpecRepoType,
+} from "../repository";
 import { ConflictError, NotFoundError, ValidationError } from "../util/error";
 
 const create = async (
@@ -62,7 +65,23 @@ const update = async (
   return updated;
 };
 
-const remove = async (id: string, repo: ResourceSpecRepoType) => {
+const remove = async (
+  id: string,
+  repo: ResourceSpecRepoType,
+  partResourceSpecRepo: PartResourceSpecRepoType
+) => {
+  const existing = await repo.findById(id);
+  if (!existing) throw new NotFoundError("Resource spec not found");
+
+  // Guard: don't delete a resource spec that materials still reference.
+  const inUse = await partResourceSpecRepo.countPartsUsing(id);
+  if (inUse > 0) {
+    throw new ConflictError(
+      `Cannot delete resource spec "${existing.code}": it is used by ` +
+        `${inUse} material${inUse === 1 ? "" : "s"}. Unassign it first.`
+    );
+  }
+
   const ok = await repo.softDelete(id);
   if (!ok) throw new NotFoundError("Resource spec not found");
   return { message: "Resource spec deleted successfully" };

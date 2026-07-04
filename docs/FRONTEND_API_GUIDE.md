@@ -205,6 +205,8 @@ e.g. `MB-VA-15-3040` = Mechanical Bought-out · Valve · 15 mm · SS 304.
 Use these to populate the dropdowns on the “create material” form. Admins can
 append new options (FRD §6). A material can have **multiple** resource specs —
 render `GET /api/resource-specs` as a multi-select and submit `resource_spec_ids[]`.
+Deleting a resource spec that is still assigned to any material returns **409**
+(`"Cannot delete resource spec … used by N materials"`) — unassign it first.
 
 ### Materials — `/api/parts`
 

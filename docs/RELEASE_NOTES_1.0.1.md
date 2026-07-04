@@ -119,6 +119,10 @@ GET /api/resource-specs        → [{ id, code, name, description, is_active }]
 Admin-managed CRUD (create/update/delete are Administrator-only), same shape as
 Units/Grades. Use `GET` to populate the resource-spec multi-select.
 
+> **Delete guard:** `DELETE /api/resource-specs/:id` returns **409** if the spec
+> is still assigned to any material — unassign it from those materials first.
+> Handle this error in the admin UI.
+
 ### Request — create / update
 ```jsonc
 // POST / PATCH /api/parts

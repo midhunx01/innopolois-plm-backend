@@ -216,9 +216,14 @@ GET /api/resource-specs   → [{ id, code, name, description, is_active }]
 | `resource_spec_ids` | string[] | Selected resource-spec UUIDs |
 | `resource_specs` | object[] | Full resource-spec objects (code, name, description) |
 
+> **Delete guard:** `DELETE /api/resource-specs/:id` returns **409** if the spec
+> is still assigned to any material (message names the count). Surface that error
+> and prompt the admin to unassign it from those materials first.
+
 ### Frontend action
 1. Add a **resource-spec multi-select** to the material form, sourced from `GET /api/resource-specs`, submitting `resource_spec_ids: string[]`.
 2. Render selected specs from `resource_specs` on the material detail view.
+3. Handle **409** on resource-spec delete (spec in use) with a clear message.
 
 ---
 

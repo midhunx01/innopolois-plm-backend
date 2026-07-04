@@ -93,7 +93,8 @@ export const deleteResourceSpec = async (
     if (!idValidation.valid) throw new ValidationError(idValidation.error);
     const result = await resourceSpecService.remove(
       idValidation.data,
-      resourceSpecRepo
+      resourceSpecRepo,
+      repository.partResourceSpecRepo
     );
     ApiResponse.success(res, 200, "Resource spec deleted", result);
   } catch (error) {

@@ -1,7 +1,12 @@
-import { eq } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { uuidv7 } from "uuidv7";
 import { DB } from "../db/db-connection";
-import { partResourceSpecs, resourceSpecs, ResourceSpec } from "../db/schema";
+import {
+  partResourceSpecs,
+  parts,
+  resourceSpecs,
+  ResourceSpec,
+} from "../db/schema";
 import { logger } from "../util";
 
 export type PartResourceSpecRepoType = {
@@ -11,6 +16,8 @@ export type PartResourceSpecRepoType = {
   listResourceSpecIdsByPart: (partId: string) => Promise<string[]>;
   // Replace the entire resource-spec set for a part with the given ids.
   setForPart: (partId: string, resourceSpecIds: string[]) => Promise<void>;
+  // How many live (non-deleted) materials reference a resource spec.
+  countPartsUsing: (resourceSpecId: string) => Promise<number>;
 };
 
 const listByPart = async (partId: string): Promise<ResourceSpec[]> => {
@@ -19,13 +26,35 @@ const listByPart = async (partId: string): Promise<ResourceSpec[]> => {
       .from(partResourceSpecs)
       .innerJoin(
         resourceSpecs,
-        eq(resourceSpecs.id, partResourceSpecs.resource_spec_id)
+        and(
+          eq(resourceSpecs.id, partResourceSpecs.resource_spec_id),
+          isNull(resourceSpecs.deleted_at)
+        )
       )
       .where(eq(partResourceSpecs.part_id, partId))
       .orderBy(partResourceSpecs.created_at);
     return rows.map((r) => r.spec);
   } catch (error) {
     logger.error(`[PartResourceSpec Repo]: error listing for ${partId}: ${error}`);
+    throw error;
+  }
+};
+
+const countPartsUsing = async (resourceSpecId: string): Promise<number> => {
+  try {
+    const [row] = await DB.select({ count: sql<number>`count(*)::int` })
+      .from(partResourceSpecs)
+      .innerJoin(
+        parts,
+        and(
+          eq(parts.id, partResourceSpecs.part_id),
+          isNull(parts.deleted_at)
+        )
+      )
+      .where(eq(partResourceSpecs.resource_spec_id, resourceSpecId));
+    return row?.count ?? 0;
+  } catch (error) {
+    logger.error(`[PartResourceSpec Repo]: error counting parts for ${resourceSpecId}: ${error}`);
     throw error;
   }
 };
@@ -76,4 +105,5 @@ export const partResourceSpecRepo: PartResourceSpecRepoType = {
   listByPart,
   listResourceSpecIdsByPart,
   setForPart,
+  countPartsUsing,
 };
