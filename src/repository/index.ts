@@ -9,6 +9,7 @@ export * from "./supplier-repo";
 export * from "./part-repo";
 export * from "./part-vendor-repo";
 export * from "./part-resource-spec-repo";
+export * from "./part-price-history-repo";
 export * from "./counter-repo";
 export * from "./project-repo";
 export * from "./project-bom-repo";

@@ -244,6 +244,20 @@ returns the resolved list as `vendor_ids` (UUIDs) plus `preferred_vendors`
 leave unchanged, or send `[]` to clear. `GET /api/parts/:id` returns
 `resource_spec_ids` (UUIDs) plus `resource_specs` (full objects).
 
+**Purchase price is tracked over time.** `last_purchase_price` entered at
+creation is captured as the opening value (`last_purchase_date` set, logged as
+an `Initial` price-history entry). Thereafter it **auto-updates on every vendor
+goods-receipt** (`POST /api/purchase-orders/:id/receive`): the received line's
+unit price becomes `last_purchase_price`, `last_purchase_date` becomes the
+receipt date, and a `Purchase` row is appended to the ledger. The field is
+read-only in effect — sending it on `PATCH` still works but a later receipt
+overwrites it.
+
+**Price history** `GET /api/parts/:id/price-history` → `{ part_id,
+last_purchase_price, last_purchase_date, history: [...] }`. Each `history` row:
+`unit_price, source ("Initial"|"Purchase"), vendor_id, purchase_order_id,
+reference (PO number or "Initial"), quantity, effective_date`. Newest first.
+
 **List** `GET /api/parts` *(paginated)* — query params:
 `search` (code/name/remarks/drawing/make), `categoryId`, `subtypeId`,
 `lifecycle`, `availability`, `sourcing`, `page`, `pageSize`.
@@ -251,13 +265,15 @@ leave unchanged, or send `[]` to clear. `GET /api/parts/:id` returns
 **Other:** `GET /api/parts/:id` (adds owner fields `owner_name`,
 `owner_initials`, `owner_hue`, vendor fields `vendor_ids`,
 `preferred_vendors`, and resource-spec fields `resource_spec_ids`,
-`resource_specs`), `PATCH /api/parts/:id` (Engineering),
+`resource_specs`, and price fields `last_purchase_date` + full
+`GET /api/parts/:id/price-history`), `PATCH /api/parts/:id` (Engineering),
 `DELETE /api/parts/:id` (soft delete).
 
 **Response shape (`Part`):** `id, part_number, category_id, subtype_id,
 major_spec_id, grade_id, material_type, sub_type, sub_type_code, major_spec,
 detail_spec, category, name, remarks, material, finish, revision, lifecycle,
-sourcing, weight_kg, unit_cost, last_purchase_price, lead_time_days,
+sourcing, weight_kg, unit_cost, last_purchase_price, last_purchase_date,
+lead_time_days,
 manufacturer_part_number, make, model, drawing_ref, availability, stock_qty,
 reorder_point, min_stock, max_stock, stock_location, uom, compliance[], tags[],
 owner_id, thumbnail_hue, where_used_count, created_at, updated_at`. Single-record

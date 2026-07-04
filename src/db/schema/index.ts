@@ -10,6 +10,7 @@ export * from "./suppliers";
 export * from "./parts";
 export * from "./part-vendors";
 export * from "./part-resource-specs";
+export * from "./part-price-history";
 export * from "./counters";
 export * from "./projects";
 export * from "./project-boms";

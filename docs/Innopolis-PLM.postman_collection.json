@@ -1421,6 +1421,26 @@
               }
             },
             {
+              "name": "Get material price history",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/parts/{{partId}}/price-history",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "parts",
+                    "{{partId}}",
+                    "price-history"
+                  ]
+                },
+                "description": "Returns { part_id, last_purchase_price, last_purchase_date, history[] }. The ledger is seeded with an 'Initial' entry when last_purchase_price is set at creation, and gains a 'Purchase' entry (with vendor + PO) on every goods receipt via POST /api/purchase-orders/:id/receive."
+              }
+            },
+            {
               "name": "Update material (Engineering)",
               "request": {
                 "method": "PATCH",

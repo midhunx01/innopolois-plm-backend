@@ -25,6 +25,7 @@ const deps: service.PurchaseOrderServiceDeps = {
   quotationLineRepo: repository.quotationLineRepo,
   rfqLineRepo: repository.rfqLineRepo,
   partRepo: repository.partRepo,
+  partPriceHistoryRepo: repository.partPriceHistoryRepo,
   counterRepo: repository.counterRepo,
   stockBalanceRepo: repository.stockBalanceRepo,
   stockMovementRepo: repository.stockMovementRepo,

@@ -70,6 +70,9 @@ export const parts = pgTable(
     })
       .default("0")
       .notNull(),
+    // When last_purchase_price last changed (manual capture at creation, then
+    // each vendor goods-receipt). Full trail lives in `part_price_history`.
+    last_purchase_date: timestamp("last_purchase_date", { withTimezone: true }),
     lead_time_days: integer("lead_time_days").default(0).notNull(),
     // Preferred vendors (Vendor Master) are a many-to-many relation — see the
     // `part_vendors` join table.

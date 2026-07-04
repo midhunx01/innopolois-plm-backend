@@ -6,6 +6,7 @@ import {
   MajorSpecRepoType,
   MaterialCategoryRepoType,
   PartFilters,
+  PartPriceHistoryRepoType,
   PartRepoType,
   PartResourceSpecRepoType,
   PartVendorRepoType,
@@ -20,6 +21,7 @@ export interface PartServiceDeps {
   partRepo: PartRepoType;
   partVendorRepo: PartVendorRepoType;
   partResourceSpecRepo: PartResourceSpecRepoType;
+  partPriceHistoryRepo: PartPriceHistoryRepoType;
   categoryRepo: MaterialCategoryRepoType;
   subtypeRepo: SubtypeRepoType;
   majorSpecRepo: MajorSpecRepoType;
@@ -92,6 +94,10 @@ const create = async (
   const resourceSpecIds = dto.resource_spec_ids ?? [];
   await assertResourceSpecsExist(resourceSpecIds, deps);
 
+  // A price entered at creation is the material's initial "last purchase price".
+  const priceEntered = dto.last_purchase_price !== undefined;
+  const now = new Date();
+
   // 2. Build the intelligent material code TT-SS-MM-DDDD (FRD §4).
   const partNumber = buildMaterialCode(
     category.type_code,
@@ -134,6 +140,7 @@ const create = async (
 
     unit_cost: num(dto.unit_cost),
     last_purchase_price: num(dto.last_purchase_price),
+    last_purchase_date: priceEntered ? now : null,
     lead_time_days: dto.lead_time_days ?? 0,
     manufacturer_part_number: dto.manufacturer_part_number ?? "",
     make: dto.make ?? "",
@@ -159,6 +166,20 @@ const create = async (
 
   await deps.partVendorRepo.setForPart(created.id, vendorIds);
   await deps.partResourceSpecRepo.setForPart(created.id, resourceSpecIds);
+
+  // Seed the price ledger with the manually-entered opening price.
+  if (priceEntered) {
+    await deps.partPriceHistoryRepo.create({
+      id: uuidv7(),
+      part_id: created.id,
+      unit_price: num(dto.last_purchase_price),
+      source: "Initial",
+      reference: "Initial",
+      quantity: "0",
+      effective_date: now,
+    });
+  }
+
   const preferred_vendors = await deps.partVendorRepo.listByPart(created.id);
   const resource_specs = await deps.partResourceSpecRepo.listByPart(created.id);
   return {
@@ -172,6 +193,19 @@ const create = async (
 
 const list = async (filters: PartFilters, partRepo: PartRepoType) =>
   partRepo.list(filters);
+
+// Full price ledger for a material (newest first), plus the current values.
+const getPriceHistory = async (id: string, deps: PartServiceDeps) => {
+  const part = await deps.partRepo.findById(id);
+  if (!part) throw new NotFoundError("Material not found");
+  const history = await deps.partPriceHistoryRepo.listByPart(id);
+  return {
+    part_id: part.id,
+    last_purchase_price: part.last_purchase_price,
+    last_purchase_date: part.last_purchase_date,
+    history,
+  };
+};
 
 const getById = async (id: string, deps: PartServiceDeps) => {
   const part = await deps.partRepo.findById(id);
@@ -255,6 +289,7 @@ export const partService = {
   create,
   list,
   getById,
+  getPriceHistory,
   update,
   remove,
 };

@@ -4,8 +4,8 @@
 **Backend version:** 1.0.1
 **Audience:** Frontend developer
 
-This release changes the **Material Master** API contract in three ways — two
-breaking field changes plus one new feature. This doc is the frontend action
+This release changes the **Material Master** API contract in four ways — two
+breaking field changes plus two new features. This doc is the frontend action
 list: what the API now sends/expects, and what to change in the UI.
 
 > These changes are live once the **backend v1.0.1 is deployed**. Coordinate the
@@ -21,10 +21,13 @@ list: what the API now sends/expects, and what to change in the UI.
 | 1 | Material supports **multiple preferred vendors** | Vendor picker → multi-select, send `vendor_ids[]` |
 | 2 | Material `description` → `remarks` | Rename the field on the material form + views |
 | 3 | Material supports **multiple resource specs** (new master) | Add a resource-spec multi-select, send `resource_spec_ids[]` |
+| 4 | **Purchase-price history** + auto-updating `last_purchase_price`/`date` | Show `last_purchase_date`; add a price-history view |
 
 Affected endpoints: `POST /api/parts`, `PATCH /api/parts/:id`,
-`GET /api/parts/:id`, `GET /api/parts`, plus the new
-`GET /api/resource-specs` master (dropdown source). No other module changed.
+`GET /api/parts/:id`, `GET /api/parts`, the new `GET /api/resource-specs`
+master (dropdown source), and the new `GET /api/parts/:id/price-history`.
+Goods receipt (`POST /api/purchase-orders/:id/receive`) now also updates the
+material price. No other module changed.
 
 ---
 
@@ -159,6 +162,57 @@ Rules (identical to `vendor_ids`):
 
 ---
 
+## 4. Purchase-price history (new)
+
+`last_purchase_price` is no longer just a static number the user types — it is
+now tracked over time and **auto-updates when the material is purchased**.
+
+### How it behaves
+- **At creation:** the `last_purchase_price` you enter is captured as the
+  opening value — `last_purchase_date` is stamped and an `Initial` row is added
+  to the price ledger.
+- **On goods receipt** (`POST /api/purchase-orders/:id/receive`): each received
+  line’s unit price becomes the material’s `last_purchase_price`,
+  `last_purchase_date` becomes the receipt date, and a `Purchase` row (vendor +
+  PO + qty) is appended to the ledger.
+- So `last_purchase_price` is **effectively read-only** — you can still send it
+  on `PATCH`, but the next goods receipt overwrites it.
+
+### New field on reads
+`GET /api/parts/:id` now returns **`last_purchase_date`** (ISO timestamp, or
+`null` if never priced) next to `last_purchase_price`.
+
+### New endpoint — price history
+```
+GET /api/parts/:id/price-history
+→ { part_id, last_purchase_price, last_purchase_date, history: [ … ] }
+```
+Each `history` row (newest first):
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `unit_price` | string | Price at that event |
+| `source` | `"Initial" \| "Purchase"` | Manual opening value vs. a vendor receipt |
+| `vendor_id` | string \| null | Supplier (null for `Initial`) |
+| `purchase_order_id` | string \| null | Source PO (null for `Initial`) |
+| `reference` | string | PO number, or `"Initial"` |
+| `quantity` | string | Accepted qty received |
+| `effective_date` | string | When the price took effect |
+
+### UI work
+- Show `last_purchase_date` next to `last_purchase_price` on the material view.
+- Add a **price-history** panel/table from `GET /api/parts/:id/price-history`
+  (e.g. a trend list or mini chart).
+- Treat `last_purchase_price` as system-maintained after purchases (label it
+  “last purchase” rather than an editable price).
+
+### Type change (frontend `Part`)
+```diff
++ last_purchase_date: string | null
+```
+
+---
+
 ## Migration checklist (frontend)
 
 - [ ] Material form: vendor picker → **multi-select**, submit `vendor_ids: string[]`.
@@ -167,7 +221,8 @@ Rules (identical to `vendor_ids`):
 - [ ] Material form + views: rename `description` → `remarks`.
 - [ ] Material form: add a **resource-spec multi-select** from `GET /api/resource-specs`, submit `resource_spec_ids: string[]`.
 - [ ] Material detail: render resource specs from `resource_specs`.
-- [ ] Update the `Part` type/interface (`vendor_ids`, `preferred_vendors`, `remarks`, `resource_spec_ids`, `resource_specs`).
+- [ ] Update the `Part` type/interface (`vendor_ids`, `preferred_vendors`, `remarks`, `resource_spec_ids`, `resource_specs`, `last_purchase_date`).
+- [ ] Show `last_purchase_date` and add a price-history view from `GET /api/parts/:id/price-history`; treat `last_purchase_price` as system-maintained.
 - [ ] Ship the UI **together with** the backend v1.0.1 deploy.
 
 ---
@@ -181,6 +236,8 @@ Rules (identical to `vendor_ids`):
 | `description: string` | `remarks: string` | Rename only |
 | — | `resource_spec_ids: string[]` | New; multi-select from `/api/resource-specs` |
 | — | `resource_specs: ResourceSpec[]` | New; single-material reads only |
+| — | `last_purchase_date: string \| null` | New; auto-set on purchase |
+| `last_purchase_price` (manual) | `last_purchase_price` (auto) | Now auto-updates on goods receipt |
 
 Deeper rationale and the full v1.0.1 change list (including non-material backend
 changes) live in **`BACKEND_CHANGES_FOR_FRONTEND.md`**; the complete endpoint

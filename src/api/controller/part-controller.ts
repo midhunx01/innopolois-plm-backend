@@ -17,6 +17,7 @@ const deps: service.PartServiceDeps = {
   partRepo,
   partVendorRepo: repository.partVendorRepo,
   partResourceSpecRepo: repository.partResourceSpecRepo,
+  partPriceHistoryRepo: repository.partPriceHistoryRepo,
   categoryRepo: repository.materialCategoryRepo,
   subtypeRepo: repository.subtypeRepo,
   majorSpecRepo: repository.majorSpecRepo,
@@ -95,6 +96,21 @@ export const getPart = async (
     if (!idValidation.valid) throw new ValidationError(idValidation.error);
     const result = await partService.getById(idValidation.data, deps);
     ApiResponse.success(res, 200, "Material retrieved", result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getPartPriceHistory = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const idValidation = ValidateRequest(req.params.id, UuidString);
+    if (!idValidation.valid) throw new ValidationError(idValidation.error);
+    const result = await partService.getPriceHistory(idValidation.data, deps);
+    ApiResponse.success(res, 200, "Price history retrieved", result);
   } catch (error) {
     next(error);
   }

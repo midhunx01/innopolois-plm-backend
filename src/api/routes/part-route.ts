@@ -10,6 +10,7 @@ router.use(authenticate);
 router.post("/", authorize("Engineering"), partController.createPart);
 router.get("/", partController.listParts);
 router.get("/:id", partController.getPart);
+router.get("/:id/price-history", partController.getPartPriceHistory);
 router.patch("/:id", authorize("Engineering"), partController.updatePart);
 router.delete("/:id", authorize("Engineering"), partController.deletePart);
 

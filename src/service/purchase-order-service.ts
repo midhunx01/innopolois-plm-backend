@@ -7,6 +7,7 @@ import {
 import { NewPoLine, NewPurchaseOrder, PoStatus } from "../db/schema";
 import {
   CounterRepoType,
+  PartPriceHistoryRepoType,
   PartRepoType,
   PoFilters,
   PoLineRepoType,
@@ -30,6 +31,7 @@ export interface PurchaseOrderServiceDeps {
   quotationLineRepo: QuotationLineRepoType;
   rfqLineRepo: RfqLineRepoType;
   partRepo: PartRepoType;
+  partPriceHistoryRepo: PartPriceHistoryRepoType;
   counterRepo: CounterRepoType;
   // Inventory wiring — goods receipt posts accepted stock (FRD §14).
   stockBalanceRepo: StockBalanceRepoType;
@@ -231,6 +233,9 @@ const receive = async (
     warehouseRepo: deps.warehouseRepo,
     partRepo: deps.partRepo,
   };
+  // One timestamp for the whole receipt, shared by stock, price history and the
+  // material's last_purchase_date.
+  const receivedAt = new Date();
 
   for (const r of dto.lines) {
     const line = lineById.get(r.po_line_id);
@@ -276,6 +281,24 @@ const receive = async (
         },
         invDeps
       );
+
+      // This is a realised vendor purchase — record the price in the material's
+      // ledger and refresh its last_purchase_price / last_purchase_date.
+      await deps.partPriceHistoryRepo.create({
+        id: uuidv7(),
+        part_id: line.part_id,
+        unit_price: line.unit_price,
+        source: "Purchase",
+        vendor_id: po.supplier_id ?? null,
+        purchase_order_id: po.id,
+        reference: po.number,
+        quantity: accepted.toString(),
+        effective_date: receivedAt,
+      });
+      await deps.partRepo.update(line.part_id, {
+        last_purchase_price: line.unit_price,
+        last_purchase_date: receivedAt,
+      });
     }
   }
 

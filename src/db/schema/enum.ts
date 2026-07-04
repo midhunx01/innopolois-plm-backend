@@ -175,3 +175,8 @@ export const inspectionStatusEnum = pgEnum("inspection_status", [
 ]);
 export type InspectionStatus =
   (typeof inspectionStatusEnum.enumValues)[number];
+
+// Source of a material price-history entry: the manual value captured at
+// material creation, vs. a realised vendor purchase (goods receipt).
+export const priceSourceEnum = pgEnum("price_source", ["Initial", "Purchase"]);
+export type PriceSource = (typeof priceSourceEnum.enumValues)[number];
