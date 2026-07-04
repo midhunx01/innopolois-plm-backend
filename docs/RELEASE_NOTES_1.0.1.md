@@ -173,19 +173,23 @@ now tracked over time and **auto-updates when the material is purchased**.
   to the price ledger.
 - **On goods receipt** (`POST /api/purchase-orders/:id/receive`): each received
   line’s unit price becomes the material’s `last_purchase_price`,
-  `last_purchase_date` becomes the receipt date, and a `Purchase` row (vendor +
-  PO + qty) is appended to the ledger.
+  `last_purchase_date` becomes the receipt date, `last_purchase_vendor_id`
+  becomes the PO’s vendor, and a `Purchase` row (vendor + PO + qty) is appended
+  to the ledger.
 - So `last_purchase_price` is **effectively read-only** — you can still send it
   on `PATCH`, but the next goods receipt overwrites it.
 
-### New field on reads
+### New fields on reads
 `GET /api/parts/:id` now returns **`last_purchase_date`** (ISO timestamp, or
-`null` if never priced) next to `last_purchase_price`.
+`null`), **`last_purchase_vendor_id`**, and a resolved **`last_purchase_vendor`**
+object (the vendor of the last purchase, `null` for a manual opening value) —
+next to `last_purchase_price`.
 
 ### New endpoint — price history
 ```
 GET /api/parts/:id/price-history
-→ { part_id, last_purchase_price, last_purchase_date, history: [ … ] }
+→ { part_id, last_purchase_price, last_purchase_date, last_purchase_vendor,
+    history: [ … ] }
 ```
 Each `history` row (newest first):
 
@@ -200,7 +204,8 @@ Each `history` row (newest first):
 | `effective_date` | string | When the price took effect |
 
 ### UI work
-- Show `last_purchase_date` next to `last_purchase_price` on the material view.
+- Show `last_purchase_date` **and `last_purchase_vendor`** next to
+  `last_purchase_price` on the material view ("last bought at X from Y on Z").
 - Add a **price-history** panel/table from `GET /api/parts/:id/price-history`
   (e.g. a trend list or mini chart).
 - Treat `last_purchase_price` as system-maintained after purchases (label it
@@ -209,6 +214,8 @@ Each `history` row (newest first):
 ### Type change (frontend `Part`)
 ```diff
 + last_purchase_date: string | null
++ last_purchase_vendor_id: string | null
++ last_purchase_vendor: Vendor | null   // resolved, on single-material reads
 ```
 
 ---
@@ -237,6 +244,7 @@ Each `history` row (newest first):
 | — | `resource_spec_ids: string[]` | New; multi-select from `/api/resource-specs` |
 | — | `resource_specs: ResourceSpec[]` | New; single-material reads only |
 | — | `last_purchase_date: string \| null` | New; auto-set on purchase |
+| — | `last_purchase_vendor_id` + `last_purchase_vendor` | New; vendor of the last purchase |
 | `last_purchase_price` (manual) | `last_purchase_price` (auto) | Now auto-updates on goods receipt |
 
 Deeper rationale and the full v1.0.1 change list (including non-material backend

@@ -18,6 +18,7 @@ import { subtypes } from "./subtypes";
 import { majorSpecs } from "./major-specs";
 import { grades } from "./grades";
 import { users } from "./users";
+import { suppliers } from "./suppliers";
 
 // The Material Master record (FRD §3, §5) — the single source of truth. Every
 // BOM line references one of these. `part_number` is the intelligent code
@@ -71,8 +72,12 @@ export const parts = pgTable(
       .default("0")
       .notNull(),
     // When last_purchase_price last changed (manual capture at creation, then
-    // each vendor goods-receipt). Full trail lives in `part_price_history`.
+    // each vendor goods-receipt) and the vendor it was last bought from (null
+    // for a manual opening value). Full trail lives in `part_price_history`.
     last_purchase_date: timestamp("last_purchase_date", { withTimezone: true }),
+    last_purchase_vendor_id: uuid("last_purchase_vendor_id").references(
+      () => suppliers.id
+    ),
     lead_time_days: integer("lead_time_days").default(0).notNull(),
     // Preferred vendors (Vendor Master) are a many-to-many relation — see the
     // `part_vendors` join table.

@@ -36,6 +36,13 @@
       "when": 1783146665853,
       "tag": "0004_awesome_firebrand",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1783147572147,
+      "tag": "0005_rich_eternity",
+      "breakpoints": true
     }
   ]
 }

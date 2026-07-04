@@ -199,10 +199,14 @@ const getPriceHistory = async (id: string, deps: PartServiceDeps) => {
   const part = await deps.partRepo.findById(id);
   if (!part) throw new NotFoundError("Material not found");
   const history = await deps.partPriceHistoryRepo.listByPart(id);
+  const last_purchase_vendor = part.last_purchase_vendor_id
+    ? await deps.supplierRepo.findById(part.last_purchase_vendor_id)
+    : null;
   return {
     part_id: part.id,
     last_purchase_price: part.last_purchase_price,
     last_purchase_date: part.last_purchase_date,
+    last_purchase_vendor,
     history,
   };
 };
@@ -212,12 +216,16 @@ const getById = async (id: string, deps: PartServiceDeps) => {
   if (!part) throw new NotFoundError("Material not found");
   const preferred_vendors = await deps.partVendorRepo.listByPart(id);
   const resource_specs = await deps.partResourceSpecRepo.listByPart(id);
+  const last_purchase_vendor = part.last_purchase_vendor_id
+    ? await deps.supplierRepo.findById(part.last_purchase_vendor_id)
+    : null;
   return {
     ...part,
     vendor_ids: preferred_vendors.map((v) => v.id),
     preferred_vendors,
     resource_spec_ids: resource_specs.map((s) => s.id),
     resource_specs,
+    last_purchase_vendor,
   };
 };
 

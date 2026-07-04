@@ -298,6 +298,7 @@ const receive = async (
       await deps.partRepo.update(line.part_id, {
         last_purchase_price: line.unit_price,
         last_purchase_date: receivedAt,
+        last_purchase_vendor_id: po.supplier_id ?? null,
       });
     }
   }

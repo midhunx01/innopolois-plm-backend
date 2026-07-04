@@ -267,17 +267,21 @@ opening value — <code>last_purchase_date</code> is stamped and an <code>Initia
 to the price ledger.</li>
 <li><strong>On goods receipt</strong> (<code>POST /api/purchase-orders/:id/receive</code>): each received
 line’s unit price becomes the material’s <code>last_purchase_price</code>,
-<code>last_purchase_date</code> becomes the receipt date, and a <code>Purchase</code> row (vendor +
-PO + qty) is appended to the ledger.</li>
+<code>last_purchase_date</code> becomes the receipt date, <code>last_purchase_vendor_id</code>
+becomes the PO’s vendor, and a <code>Purchase</code> row (vendor + PO + qty) is appended
+to the ledger.</li>
 <li>So <code>last_purchase_price</code> is <strong>effectively read-only</strong> — you can still send it
 on <code>PATCH</code>, but the next goods receipt overwrites it.</li>
 </ul>
-<h3>New field on reads</h3>
+<h3>New fields on reads</h3>
 <p><code>GET /api/parts/:id</code> now returns <strong><code>last_purchase_date</code></strong> (ISO timestamp, or
-<code>null</code> if never priced) next to <code>last_purchase_price</code>.</p>
+<code>null</code>), <strong><code>last_purchase_vendor_id</code></strong>, and a resolved <strong><code>last_purchase_vendor</code></strong>
+object (the vendor of the last purchase, <code>null</code> for a manual opening value) —
+next to <code>last_purchase_price</code>.</p>
 <h3>New endpoint — price history</h3>
 <pre><code>GET /api/parts/:id/price-history
-→ { part_id, last_purchase_price, last_purchase_date, history: [ … ] }
+→ { part_id, last_purchase_price, last_purchase_date, last_purchase_vendor,
+    history: [ … ] }
 </code></pre>
 <p>Each <code>history</code> row (newest first):</p>
 <table>
@@ -326,7 +330,8 @@ on <code>PATCH</code>, but the next goods receipt overwrites it.</li>
 </tbody></table>
 <h3>UI work</h3>
 <ul>
-<li>Show <code>last_purchase_date</code> next to <code>last_purchase_price</code> on the material view.</li>
+<li>Show <code>last_purchase_date</code> <strong>and <code>last_purchase_vendor</code></strong> next to
+<code>last_purchase_price</code> on the material view (&quot;last bought at X from Y on Z&quot;).</li>
 <li>Add a <strong>price-history</strong> panel/table from <code>GET /api/parts/:id/price-history</code>
 (e.g. a trend list or mini chart).</li>
 <li>Treat <code>last_purchase_price</code> as system-maintained after purchases (label it
@@ -334,6 +339,8 @@ on <code>PATCH</code>, but the next goods receipt overwrites it.</li>
 </ul>
 <h3>Type change (frontend <code>Part</code>)</h3>
 <pre><code class="language-diff">+ last_purchase_date: string | null
++ last_purchase_vendor_id: string | null
++ last_purchase_vendor: Vendor | null   // resolved, on single-material reads
 </code></pre>
 <hr>
 <h2>Migration checklist (frontend)</h2>
@@ -387,6 +394,11 @@ on <code>PATCH</code>, but the next goods receipt overwrites it.</li>
 <td>—</td>
 <td><code>last_purchase_date: string | null</code></td>
 <td>New; auto-set on purchase</td>
+</tr>
+<tr>
+<td>—</td>
+<td><code>last_purchase_vendor_id</code> + <code>last_purchase_vendor</code></td>
+<td>New; vendor of the last purchase</td>
 </tr>
 <tr>
 <td><code>last_purchase_price</code> (manual)</td>

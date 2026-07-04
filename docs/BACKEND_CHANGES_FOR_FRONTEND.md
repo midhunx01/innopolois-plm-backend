@@ -238,22 +238,26 @@ and updated automatically when the material is purchased.
   opening value (`last_purchase_date` stamped, logged as an `Initial` ledger row).
 - **On goods receipt** (`POST /api/purchase-orders/:id/receive`): each received
   line's unit price becomes the material's `last_purchase_price`,
-  `last_purchase_date` becomes the receipt date, and a `Purchase` ledger row
-  (vendor + PO + qty) is appended.
+  `last_purchase_date` becomes the receipt date, `last_purchase_vendor_id`
+  becomes the PO's vendor, and a `Purchase` ledger row (vendor + PO + qty) is
+  appended.
 
-**New field on material reads:** `last_purchase_date` (ISO timestamp, or `null`).
+**New fields on material reads (`GET /api/parts/:id`):** `last_purchase_date`
+(ISO timestamp, or `null`), `last_purchase_vendor_id`, and a resolved
+`last_purchase_vendor` object (`null` for a manual opening value).
 
 **New endpoint:**
 ```
 GET /api/parts/:id/price-history
-→ { part_id, last_purchase_price, last_purchase_date,
+→ { part_id, last_purchase_price, last_purchase_date, last_purchase_vendor,
     history: [ { unit_price, source: "Initial"|"Purchase", vendor_id,
                  purchase_order_id, reference, quantity, effective_date } ] }
 ```
 Newest first.
 
 ### Frontend action
-1. Show `last_purchase_date` alongside `last_purchase_price` on the material view.
+1. Show `last_purchase_price`, `last_purchase_date` **and the vendor**
+   (`last_purchase_vendor`) together on the material view.
 2. Add a **price-history** panel from `GET /api/parts/:id/price-history`.
 3. Treat `last_purchase_price` as **system-maintained** after purchases (label it
    "last purchase", not an editable price).
