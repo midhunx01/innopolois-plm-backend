@@ -4,9 +4,15 @@ import {
   ReceivePoDtoType,
   UpdatePoStatusDtoType,
 } from "../api/dto/purchase-order-req-dto";
-import { NewPoLine, NewPurchaseOrder, PoStatus } from "../db/schema";
+import {
+  NewGoodsReceiptLine,
+  NewPoLine,
+  NewPurchaseOrder,
+  PoStatus,
+} from "../db/schema";
 import {
   CounterRepoType,
+  GoodsReceiptRepoType,
   PartPriceHistoryRepoType,
   PartRepoType,
   PoFilters,
@@ -37,6 +43,8 @@ export interface PurchaseOrderServiceDeps {
   stockBalanceRepo: StockBalanceRepoType;
   stockMovementRepo: StockMovementRepoType;
   warehouseRepo: WarehouseRepoType;
+  // Goods Receipt Note (GRN) history — one record per partial receipt.
+  goodsReceiptRepo: GoodsReceiptRepoType;
 }
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
@@ -215,6 +223,7 @@ const updateStatus = async (
 const receive = async (
   id: string,
   dto: ReceivePoDtoType,
+  userId: string,
   deps: PurchaseOrderServiceDeps
 ) => {
   const po = await deps.poRepo.findById(id);
@@ -237,6 +246,17 @@ const receive = async (
   // material's last_purchase_date.
   const receivedAt = new Date();
 
+  // ── Pass 1: validate the whole receipt before writing anything ────────────
+  // Each call is one partial delivery; received_qty is the qty that arrived NOW.
+  const planned: {
+    line: (typeof lines)[number];
+    received: number;
+    rejected: number;
+    accepted: number;
+    newReceived: number;
+    batch: string;
+  }[] = [];
+
   for (const r of dto.lines) {
     const line = lineById.get(r.po_line_id);
     if (!line) {
@@ -244,9 +264,13 @@ const receive = async (
         `po_line_id ${r.po_line_id} does not belong to this PO`
       );
     }
-    if (r.received_qty > Number(line.quantity)) {
+    // Accumulate onto what was already received; block cumulative over-receipt.
+    const already = Number(line.received_qty);
+    const remaining = Number(line.quantity) - already;
+    if (r.received_qty > remaining) {
       throw new ValidationError(
-        `received_qty for ${line.part_number} exceeds ordered quantity`
+        `received_qty for ${line.part_number} exceeds the remaining ` +
+          `quantity (${remaining})`
       );
     }
     const rejected = r.rejected_qty ?? 0;
@@ -255,53 +279,101 @@ const receive = async (
         `rejected_qty for ${line.part_number} exceeds received quantity`
       );
     }
-    await deps.poLineRepo.update(line.id, {
-      received_qty: r.received_qty.toString(),
+    // Nothing physically received on this line → skip (no stock, no GRN line).
+    if (r.received_qty <= 0) continue;
+
+    planned.push({
+      line,
+      received: r.received_qty,
+      rejected,
+      accepted: r.received_qty - rejected,
+      newReceived: already + r.received_qty,
+      batch: r.batch ?? "",
     });
-    line.received_qty = r.received_qty.toString(); // reflect for recompute below
+  }
+
+  if (planned.length === 0) {
+    throw new ValidationError(
+      "At least one line must have a received_qty greater than zero"
+    );
+  }
+
+  // ── Pass 2: apply. Record the Goods Receipt Note (GRN) for this delivery ───
+  const grnSeq = await deps.counterRepo.next("grn");
+  const grn = await deps.goodsReceiptRepo.create({
+    id: uuidv7(),
+    grn_number: `GRN-${String(grnSeq).padStart(4, "0")}`,
+    po_id: po.id,
+    warehouse_id: dto.warehouse_id,
+    received_by: userId,
+    note: dto.note ?? "",
+    received_at: receivedAt,
+  });
+  if (!grn) throw new ValidationError("Failed to record goods receipt");
+
+  const grnLines: NewGoodsReceiptLine[] = [];
+
+  for (const p of planned) {
+    const { line, received, rejected, accepted, newReceived, batch } = p;
+
+    await deps.poLineRepo.update(line.id, {
+      received_qty: newReceived.toString(),
+    });
+    line.received_qty = newReceived.toString(); // reflect for recompute below
+
+    grnLines.push({
+      id: uuidv7(),
+      receipt_id: grn.id,
+      po_line_id: line.id,
+      part_id: line.part_id,
+      part_number: line.part_number,
+      received_qty: received.toString(),
+      rejected_qty: rejected.toString(),
+      accepted_qty: accepted.toString(),
+      batch,
+    });
 
     // Post accepted goods into stock (FRD §14). warehouse_id is required, so a
     // receipt always books a movement. Rejected qty is recorded on the movement
     // but never increases on-hand.
-    if (r.received_qty > 0) {
-      const accepted = r.received_qty - rejected;
-      await postMovement(
-        {
-          part_id: line.part_id,
-          warehouse_id: dto.warehouse_id,
-          type: "purchase",
-          direction: "in",
-          quantity: accepted,
-          unit_cost: Number(line.unit_price),
-          inspection_status: accepted > 0 ? "Accepted" : "Rejected",
-          rejected_qty: rejected,
-          batch: r.batch ?? "",
-          reference: po.number,
-          reference_id: po.id,
-        },
-        invDeps
-      );
-
-      // This is a realised vendor purchase — record the price in the material's
-      // ledger and refresh its last_purchase_price / last_purchase_date.
-      await deps.partPriceHistoryRepo.create({
-        id: uuidv7(),
+    await postMovement(
+      {
         part_id: line.part_id,
-        unit_price: line.unit_price,
-        source: "Purchase",
-        vendor_id: po.supplier_id ?? null,
-        purchase_order_id: po.id,
-        reference: po.number,
-        quantity: accepted.toString(),
-        effective_date: receivedAt,
-      });
-      await deps.partRepo.update(line.part_id, {
-        last_purchase_price: line.unit_price,
-        last_purchase_date: receivedAt,
-        last_purchase_vendor_id: po.supplier_id ?? null,
-      });
-    }
+        warehouse_id: dto.warehouse_id,
+        type: "purchase",
+        direction: "in",
+        quantity: accepted,
+        unit_cost: Number(line.unit_price),
+        inspection_status: accepted > 0 ? "Accepted" : "Rejected",
+        rejected_qty: rejected,
+        batch,
+        reference: grn.grn_number,
+        reference_id: po.id,
+      },
+      invDeps
+    );
+
+    // This is a realised vendor purchase — record the price in the material's
+    // ledger and refresh its last_purchase_price / last_purchase_date.
+    await deps.partPriceHistoryRepo.create({
+      id: uuidv7(),
+      part_id: line.part_id,
+      unit_price: line.unit_price,
+      source: "Purchase",
+      vendor_id: po.supplier_id ?? null,
+      purchase_order_id: po.id,
+      reference: grn.grn_number,
+      quantity: accepted.toString(),
+      effective_date: receivedAt,
+    });
+    await deps.partRepo.update(line.part_id, {
+      last_purchase_price: line.unit_price,
+      last_purchase_date: receivedAt,
+      last_purchase_vendor_id: po.supplier_id ?? null,
+    });
   }
+
+  await deps.goodsReceiptRepo.createLines(grnLines);
 
   const totalQty = lines.reduce((s, l) => s + Number(l.quantity), 0);
   const totalReceived = lines.reduce((s, l) => s + Number(l.received_qty), 0);
@@ -315,6 +387,14 @@ const receive = async (
   });
   const refreshedLines = await deps.poLineRepo.listByPo(id);
   return { ...updated!, lines: refreshedLines };
+};
+
+// Goods-receipt (GRN) history for a PO — one record per partial delivery,
+// newest first, each with its line detail and the receiver's display fields.
+const getReceipts = async (id: string, deps: PurchaseOrderServiceDeps) => {
+  const po = await deps.poRepo.findById(id);
+  if (!po) throw new NotFoundError("PO not found");
+  return deps.goodsReceiptRepo.listByPo(id);
 };
 
 const remove = async (id: string, deps: PurchaseOrderServiceDeps) => {
@@ -334,5 +414,6 @@ export const purchaseOrderService = {
   getDetail,
   updateStatus,
   receive,
+  getReceipts,
   remove,
 };

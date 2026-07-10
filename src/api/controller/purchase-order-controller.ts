@@ -30,6 +30,7 @@ const deps: service.PurchaseOrderServiceDeps = {
   stockBalanceRepo: repository.stockBalanceRepo,
   stockMovementRepo: repository.stockMovementRepo,
   warehouseRepo: repository.warehouseRepo,
+  goodsReceiptRepo: repository.goodsReceiptRepo,
 };
 
 export const createPo = async (
@@ -120,12 +121,30 @@ export const receivePo = async (
     if (!idValidation.valid) throw new ValidationError(idValidation.error);
     const bodyValidation = ValidateRequest(req.body, ReceivePoDto);
     if (!bodyValidation.valid) throw new ValidationError(bodyValidation.error);
+    if (!req.auth) throw new AuthenticationError("Authentication required");
     const result = await poService.receive(
       idValidation.data,
       bodyValidation.data,
+      req.auth.id,
       deps
     );
     ApiResponse.success(res, 200, "Goods receipt recorded", result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GET /api/purchase-orders/:id/receipts — goods-receipt (GRN) history for a PO.
+export const getPoReceipts = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const idValidation = ValidateRequest(req.params.id, UuidString);
+    if (!idValidation.valid) throw new ValidationError(idValidation.error);
+    const result = await poService.getReceipts(idValidation.data, deps);
+    ApiResponse.success(res, 200, "Goods receipts retrieved", result);
   } catch (error) {
     next(error);
   }

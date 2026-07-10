@@ -86,6 +86,8 @@ export const ReceivePoDto = Type.Object(
       format: "uuid",
       errorMessage: { format: "warehouse_id must be a UUID" },
     }),
+    // Optional note for this delivery (e.g. courier / LR number, remarks).
+    note: Type.Optional(Type.String({ maxLength: 500 })),
     lines: Type.Array(
       Type.Object(
         {
@@ -93,6 +95,9 @@ export const ReceivePoDto = Type.Object(
             format: "uuid",
             errorMessage: { format: "po_line_id must be a UUID" },
           }),
+          // Quantity that arrived in THIS delivery (a delta). It accumulates
+          // onto the line's received_qty; the cumulative total may not exceed
+          // the ordered quantity. Receive again for later partial deliveries.
           received_qty: Type.Number({
             minimum: 0,
             errorMessage: { minimum: "received_qty must be >= 0" },

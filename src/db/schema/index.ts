@@ -22,6 +22,8 @@ export * from "./quotations";
 export * from "./quotation-lines";
 export * from "./purchase-orders";
 export * from "./po-lines";
+export * from "./goods-receipts";
+export * from "./goods-receipt-lines";
 export * from "./warehouses";
 export * from "./stock-balances";
 export * from "./stock-movements";

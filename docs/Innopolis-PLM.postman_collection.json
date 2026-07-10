@@ -2842,7 +2842,7 @@
               }
             },
             {
-              "name": "Receive goods → stock (Purchase/Stores)",
+              "name": "Receive goods — partial delivery 1 (Purchase/Stores)",
               "request": {
                 "method": "POST",
                 "header": [
@@ -2863,16 +2863,70 @@
                     "receive"
                   ]
                 },
-                "description": "Pass warehouse_id to post accepted stock. Rejected qty is recorded but never enters inventory.",
+                "description": "received_qty is the qty that arrived in THIS delivery — it ACCUMULATES onto the line. Send partial shipments across multiple calls; cumulative may not exceed the ordered qty (else 400). Each call books accepted stock (received - rejected) and creates a GRN. Rejected qty is recorded but never enters inventory.",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"warehouse_id\": \"{{warehouseId}}\",\n  \"lines\": [\n    {\n      \"po_line_id\": \"{{poLineId}}\",\n      \"received_qty\": 20,\n      \"rejected_qty\": 2\n    }\n  ]\n}",
+                  "raw": "{\n  \"warehouse_id\": \"{{warehouseId}}\",\n  \"note\": \"Courier LR-88213, first lot\",\n  \"lines\": [\n    {\n      \"po_line_id\": \"{{poLineId}}\",\n      \"received_qty\": 6,\n      \"rejected_qty\": 1\n    }\n  ]\n}",
                   "options": {
                     "raw": {
                       "language": "json"
                     }
                   }
                 }
+              }
+            },
+            {
+              "name": "Receive goods — partial delivery 2 (Purchase/Stores)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/purchase-orders/{{poId}}/receive",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "purchase-orders",
+                    "{{poId}}",
+                    "receive"
+                  ]
+                },
+                "description": "The rest of the order arriving later. This accumulates onto delivery 1; when the cumulative reaches the ordered qty the PO flips to Received. Adjust received_qty to the remaining amount for your PO line.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"warehouse_id\": \"{{warehouseId}}\",\n  \"note\": \"Balance lot\",\n  \"lines\": [\n    {\n      \"po_line_id\": \"{{poLineId}}\",\n      \"received_qty\": 4\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Get PO goods-receipt history (GRN)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/purchase-orders/{{poId}}/receipts",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "purchase-orders",
+                    "{{poId}}",
+                    "receipts"
+                  ]
+                },
+                "description": "Goods-receipt (GRN) history for the PO, newest first — one record per partial delivery, each with its line detail (received/rejected/accepted/batch) and who received it."
               }
             },
             {

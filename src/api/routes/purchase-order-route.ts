@@ -10,6 +10,7 @@ router.use(authenticate);
 router.post("/", authorize("Purchase"), poController.createPo);
 router.get("/", poController.listPos);
 router.get("/:id", poController.getPo);
+router.get("/:id/receipts", poController.getPoReceipts);
 router.post("/:id/status", authorize("Purchase"), poController.updatePoStatus);
 router.post("/:id/receive", authorize("Purchase", "Stores"), poController.receivePo);
 router.delete("/:id", authorize("Purchase"), poController.deletePo);

@@ -5,50 +5,15 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1783053545676,
-      "tag": "0000_modern_jack_power",
+      "when": 1783171758640,
+      "tag": "0000_wild_gravity",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "7",
-      "when": 1783084644248,
-      "tag": "0001_glamorous_ma_gnuci",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1783142054991,
-      "tag": "0002_material_remarks",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1783143495937,
-      "tag": "0003_complex_misty_knight",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1783146665853,
-      "tag": "0004_awesome_firebrand",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1783147572147,
-      "tag": "0005_rich_eternity",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1783150257714,
-      "tag": "0006_melodic_betty_ross",
+      "when": 1783659350403,
+      "tag": "0001_unique_shooting_star",
       "breakpoints": true
     }
   ]
