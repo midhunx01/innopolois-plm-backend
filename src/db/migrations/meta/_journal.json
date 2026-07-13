@@ -5,15 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1783171758640,
-      "tag": "0000_wild_gravity",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1783659350403,
-      "tag": "0001_unique_shooting_star",
+      "when": 1783768433973,
+      "tag": "0000_bored_red_ghost",
       "breakpoints": true
     }
   ]

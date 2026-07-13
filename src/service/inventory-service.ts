@@ -11,6 +11,7 @@ import {
   StockDirection,
   StockMovementType,
 } from "../db/schema";
+import { DbClient } from "../db/db-connection";
 import {
   MovementFilters,
   PartRepoType,
@@ -57,7 +58,10 @@ const deriveStatus = (onHand: number, reorderPoint: number): Availability => {
  */
 export const postMovement = async (
   args: MovementArgs,
-  deps: InventoryServiceDeps
+  deps: InventoryServiceDeps,
+  // When called inside a transaction, all writes run on `tx` so the movement,
+  // balance and aggregate update commit atomically with the caller's changes.
+  tx?: DbClient
 ) => {
   const part = await deps.partRepo.findById(args.part_id);
   if (!part) throw new ValidationError("part_id does not exist");
@@ -66,7 +70,8 @@ export const postMovement = async (
 
   let balance = await deps.stockBalanceRepo.findByPartAndWarehouse(
     part.id,
-    warehouse.id
+    warehouse.id,
+    tx
   );
   if (!balance) {
     const seed: NewStockBalance = {
@@ -85,7 +90,7 @@ export const postMovement = async (
       uom: part.uom,
       status: "Out of Stock",
     };
-    balance = await deps.stockBalanceRepo.create(seed);
+    balance = await deps.stockBalanceRepo.create(seed, tx);
     if (!balance) throw new ValidationError("Failed to open stock balance");
   }
 
@@ -101,37 +106,48 @@ export const postMovement = async (
   const reorderPoint = Number(balance.reorder_point);
   const status = deriveStatus(newOnHand, reorderPoint);
 
-  const movement = await deps.stockMovementRepo.create({
-    id: uuidv7(),
-    part_id: part.id,
-    warehouse_id: warehouse.id,
-    type: args.type,
-    direction: args.direction,
-    quantity: args.quantity.toString(),
-    unit_cost: (args.unit_cost ?? Number(balance.unit_cost)).toString(),
-    inspection_status: args.inspection_status ?? null,
-    rejected_qty: (args.rejected_qty ?? 0).toString(),
-    batch: args.batch ?? "",
-    reference: args.reference ?? "",
-    reference_id: args.reference_id ?? null,
-    note: args.note ?? "",
-    user_id: args.user_id ?? null,
-  });
+  const movement = await deps.stockMovementRepo.create(
+    {
+      id: uuidv7(),
+      part_id: part.id,
+      warehouse_id: warehouse.id,
+      type: args.type,
+      direction: args.direction,
+      quantity: args.quantity.toString(),
+      unit_cost: (args.unit_cost ?? Number(balance.unit_cost)).toString(),
+      inspection_status: args.inspection_status ?? null,
+      rejected_qty: (args.rejected_qty ?? 0).toString(),
+      batch: args.batch ?? "",
+      reference: args.reference ?? "",
+      reference_id: args.reference_id ?? null,
+      note: args.note ?? "",
+      user_id: args.user_id ?? null,
+    },
+    tx
+  );
 
-  const updatedBalance = await deps.stockBalanceRepo.update(balance.id, {
-    on_hand: newOnHand.toString(),
-    available: (newOnHand - reserved).toString(),
-    unit_cost:
-      args.unit_cost != null ? args.unit_cost.toString() : balance.unit_cost,
-    status,
-  });
+  const updatedBalance = await deps.stockBalanceRepo.update(
+    balance.id,
+    {
+      on_hand: newOnHand.toString(),
+      available: (newOnHand - reserved).toString(),
+      unit_cost:
+        args.unit_cost != null ? args.unit_cost.toString() : balance.unit_cost,
+      status,
+    },
+    tx
+  );
 
   // Keep Material Master's aggregate stock + availability current (FRD §5).
-  const totalOnHand = await deps.stockBalanceRepo.totalOnHandForPart(part.id);
-  await deps.partRepo.update(part.id, {
-    stock_qty: totalOnHand.toString(),
-    availability: deriveStatus(totalOnHand, Number(part.reorder_point)),
-  });
+  const totalOnHand = await deps.stockBalanceRepo.totalOnHandForPart(part.id, tx);
+  await deps.partRepo.update(
+    part.id,
+    {
+      stock_qty: totalOnHand.toString(),
+      availability: deriveStatus(totalOnHand, Number(part.reorder_point)),
+    },
+    tx
+  );
 
   return { movement, balance: updatedBalance };
 };

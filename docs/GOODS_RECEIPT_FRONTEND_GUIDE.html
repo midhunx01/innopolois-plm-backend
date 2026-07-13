@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Innopolis PLM — Goods Receipt Frontend Change Guide</title>
+<style>
+  :root{
+    --fg:#1c2330; --muted:#5b6675; --line:#e3e8ef; --bg:#ffffff;
+    --accent:#6d28d9; --accent-soft:#f3effd; --code-bg:#0f172a; --code-fg:#e2e8f0;
+    --green:#15803d; --green-bg:#e9f7ef; --amber:#92600a; --amber-bg:#fdf4e3;
+    --red:#b42318; --red-bg:#fdecea; --blue:#1d4ed8; --blue-bg:#eaf0fd;
+  }
+  *{box-sizing:border-box}
+  html{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  body{
+    font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--fg); background:var(--bg); margin:0 auto; padding:0 28px 60px; max-width:920px;
+  }
+  header{ padding:40px 0 20px; border-bottom:3px solid var(--accent); margin-bottom:8px; }
+  .eyebrow{ color:var(--accent); font-weight:700; letter-spacing:.08em; text-transform:uppercase; font-size:12px; }
+  h1{ font-size:32px; margin:6px 0 6px; letter-spacing:-.01em; }
+  .sub{ color:var(--muted); font-size:14px; }
+  h2{ font-size:21px; margin:36px 0 10px; padding-bottom:6px; border-bottom:1px solid var(--line); }
+  h3{ font-size:16px; margin:22px 0 6px; }
+  h4{ font-size:14px; margin:16px 0 4px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+  p{ margin:8px 0; }
+  code{ font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace; font-size:.88em;
+    background:var(--accent-soft); color:#4c1d95; padding:1px 6px; border-radius:5px; }
+  table{ border-collapse:collapse; width:100%; margin:12px 0; font-size:13.5px; }
+  th,td{ text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th{ background:#f7f8fb; font-weight:600; }
+  ul,ol{ margin:8px 0; padding-left:22px; } li{ margin:4px 0; }
+  .muted{ color:var(--muted); } .small{ font-size:12.5px; }
+  .note{ background:var(--accent-soft); border-left:4px solid var(--accent); padding:10px 14px; border-radius:0 8px 8px 0; margin:12px 0; font-size:13.5px; }
+  .warn{ background:var(--amber-bg); border-left:4px solid var(--amber); padding:10px 14px; border-radius:0 8px 8px 0; margin:12px 0; font-size:13.5px; }
+  .tip{ background:var(--green-bg); border-left:4px solid var(--green); padding:10px 14px; border-radius:0 8px 8px 0; margin:12px 0; font-size:13.5px; }
+  .pill{ display:inline-block; font-weight:700; font-size:11px; padding:2px 8px; border-radius:6px; letter-spacing:.03em; background:var(--accent-soft); color:#4c1d95; }
+  .flow{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin:14px 0; font-size:13px; }
+  .flow .step{ background:#f7f8fb; border:1px solid var(--line); border-radius:8px; padding:6px 12px; font-weight:600; }
+  .flow .arrow{ color:var(--accent); font-weight:700; }
+  .toc{ columns:2; column-gap:32px; font-size:13.5px; }
+  .toc a{ color:var(--fg); text-decoration:none; }
+  .card{ border:1px solid var(--line); border-radius:12px; padding:4px 18px 14px; margin:14px 0; }
+  .big-code{ font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace; font-size:20px; font-weight:700;
+    background:var(--code-bg); color:#e2e8f0; padding:12px 18px; border-radius:10px; display:inline-block; letter-spacing:.06em; }
+  footer{ margin-top:44px; padding-top:14px; border-top:1px solid var(--line); color:var(--muted); font-size:12px; }
+  @page{ margin:14mm 12mm; }
+  @media print{
+    body{ padding:0; max-width:none; } a{ color:inherit; text-decoration:none; }
+    .card, table, .flow{ break-inside:avoid; } h2,h3{ break-after:avoid; }
+  }
+
+  pre{ background:var(--code-bg); color:var(--code-fg); padding:14px 16px; border-radius:10px;
+       overflow-x:auto; font-size:12.5px; line-height:1.5; margin:12px 0; break-inside:avoid; }
+  pre code{ background:none; color:inherit; padding:0; font-size:inherit;
+       font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace; }
+  blockquote{ background:var(--amber-bg); border-left:4px solid var(--amber);
+       padding:8px 14px; border-radius:0 8px 8px 0; margin:12px 0; font-size:13.5px; color:#5b4708; }
+  blockquote p{ margin:4px 0; }
+  hr{ border:none; border-top:1px solid var(--line); margin:26px 0; }
+  h2:first-of-type{ margin-top:20px; }
+  td, th { font-variant-numeric: tabular-nums; }
+</style></head><body>
+<header>
+  <div class="eyebrow">Innopolis Bio Innovations · PLM Platform</div>
+  <h1>Goods Receipt — Frontend Change Guide</h1>
+  <div class="sub">Frontend team · Backend v1.0.2 · Partial goods receipt: send the per-delivery quantity</div>
+</header>
+
+<p><strong>Audience:</strong> Frontend team · <strong>Backend version:</strong> 1.0.2 · <strong>Date:</strong> 2026-07-13</p>
+<p>This is what you need to change so partial goods receipt works correctly. It
+directly addresses the &quot;40 then 20 showed 80 instead of 40&quot; issue.</p>
+<hr>
+<h2>TL;DR — the one rule</h2>
+<blockquote>
+<p><strong>On each receipt, send the quantity that arrived in THIS delivery (the
+delta) — NOT the running total.</strong> The backend now accumulates it for you.</p>
+</blockquote>
+<p>That single change fixes the balance bug. Everything else below is detail.</p>
+<hr>
+<h2>What changed on the backend</h2>
+<p>Previously the receive call <strong>overwrote</strong> the line&#39;s received quantity, so a
+second delivery replaced the first instead of adding to it — that&#39;s why 40 then
+20 showed a remaining of 80.</p>
+<p>Now <code>POST /api/purchase-orders/:id/receive</code> <strong>accumulates</strong>: the accepted
+quantity of each delivery is added onto the line, and each delivery is stored as
+a <strong>Goods Receipt Note (GRN)</strong>. Requires the <strong>v1.0.2</strong> backend to be deployed.</p>
+<hr>
+<h2>Your scenario, fixed (order = 100)</h2>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>You send <code>received_qty</code></th>
+<th>Line <code>received_qty</code> (cumulative)</th>
+<th>Remaining (<code>100 − received</code>)</th>
+<th>On-hand stock</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Receipt 1</td>
+<td><strong>40</strong></td>
+<td>40</td>
+<td><strong>60</strong></td>
+<td>40</td>
+</tr>
+<tr>
+<td>Receipt 2</td>
+<td><strong>20</strong></td>
+<td><strong>60</strong></td>
+<td><strong>40</strong> ✅</td>
+<td>60</td>
+</tr>
+</tbody></table>
+<p>After 40 then 20 → <strong>received 60, remaining 40</strong> (not 80). ✅</p>
+<p>⚠️ If the UI sends the cumulative value on receipt 2 (i.e. <code>60</code> instead of
+<code>20</code>), the backend adds it again → wrong. <strong>Always send just the newly-arrived
+quantity.</strong></p>
+<hr>
+<h2>The request</h2>
+<p><code>POST /api/purchase-orders/:id/receive</code> — roles: Purchase, Stores</p>
+<pre><code class="language-jsonc">{
+  &quot;warehouse_id&quot;: &quot;&lt;uuid&gt;&quot;,          // required — where accepted stock is booked
+  &quot;note&quot;: &quot;Courier LR-88213&quot;,         // optional (per delivery)
+  &quot;lines&quot;: [
+    {
+      &quot;po_line_id&quot;: &quot;&lt;uuid&gt;&quot;,
+      &quot;received_qty&quot;: 20,             // arrived in THIS delivery (delta, not total)
+      &quot;rejected_qty&quot;: 0,             // optional, default 0
+      &quot;batch&quot;: &quot;LOT-2026-07&quot;         // optional
+    }
+  ]
+}
+</code></pre>
+<p>Rules (surface these in the UI):</p>
+<ul>
+<li>The PO must be <strong><code>Open</code></strong> or <strong><code>Partially Received</code></strong> to receive.</li>
+<li>A <code>po_line_id</code> may appear <strong>only once</strong> per request.</li>
+<li>Accepted qty (<code>received_qty − rejected_qty</code>) is what accumulates and enters
+stock. <strong>Cumulative accepted may not exceed the ordered qty</strong> → <code>400</code>.</li>
+<li>At least one line must have <code>received_qty &gt; 0</code>.</li>
+</ul>
+<h2>The response</h2>
+<p><code>data</code> is the updated PO with its lines. A line&#39;s <strong><code>received_qty</code> is the
+cumulative accepted quantity</strong> and drives <code>received_pct</code> / <code>status</code>:</p>
+<pre><code class="language-jsonc">{
+  &quot;success&quot;: true,
+  &quot;message&quot;: &quot;Goods receipt recorded&quot;,
+  &quot;data&quot;: {
+    &quot;id&quot;: &quot;&lt;uuid&gt;&quot;, &quot;number&quot;: &quot;PO-0007&quot;,
+    &quot;status&quot;: &quot;Partially Received&quot;,   // → &quot;Received&quot; when every line is fully received
+    &quot;received_pct&quot;: &quot;60.00&quot;,
+    &quot;lines&quot;: [
+      { &quot;id&quot;: &quot;&lt;uuid&gt;&quot;, &quot;part_number&quot;: &quot;MB-VA-15-3040&quot;,
+        &quot;quantity&quot;: &quot;100.000&quot;,        // ordered
+        &quot;received_qty&quot;: &quot;60.000&quot; }     // cumulative accepted
+    ]
+  }
+}
+</code></pre>
+<p>Error envelope: <code>{ &quot;success&quot;: false, &quot;error&quot;: &quot;...&quot; }</code> with HTTP <code>400</code>. Common
+ones: over-receipt (<code>accepted quantity … exceeds the remaining quantity (40)</code>),
+duplicate line, <code>warehouse_id does not exist</code>, wrong PO state.</p>
+<hr>
+<h2>What you have to do (checklist)</h2>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Send the per-delivery quantity</strong>, not the cumulative total. Label the
+input &quot;Received now&quot; / &quot;Receiving in this delivery&quot;.</li>
+<li><input disabled="" type="checkbox"> <strong>Compute remaining = <code>quantity − received_qty</code></strong> from the response and
+show it; pre-fill &quot;Received now&quot; with the remaining and cap input at it.</li>
+<li><input disabled="" type="checkbox"> Keep the <strong>Receive</strong> action enabled while <code>status</code> is <code>Open</code> or
+<code>Partially Received</code>; disable it once <code>Received</code>.</li>
+<li><input disabled="" type="checkbox"> After each receipt, <strong>re-read the PO</strong> (the response already returns the
+updated PO+lines) and refresh remaining / status.</li>
+<li><input disabled="" type="checkbox"> Handle the <code>400</code> errors inline (over-receipt, duplicate line, bad
+warehouse) using the <code>error</code> message.</li>
+<li><input disabled="" type="checkbox"> Parse numeric fields — they come back as <strong>strings</strong> (e.g. <code>&quot;60.000&quot;</code>).</li>
+<li><input disabled="" type="checkbox"> (Nice to have) Show the <strong>delivery history</strong> — see below.</li>
+</ul>
+<hr>
+<h2>Delivery history (optional but recommended)</h2>
+<p><code>GET /api/purchase-orders/:id/receipts</code> → one record per delivery, newest first:</p>
+<pre><code class="language-jsonc">[
+  { &quot;grn_number&quot;: &quot;GRN-0002&quot;, &quot;received_at&quot;: &quot;2026-08-01T09:12:00Z&quot;,
+    &quot;received_by_name&quot;: &quot;Raj Patel&quot;, &quot;note&quot;: &quot;Balance lot&quot;,
+    &quot;lines&quot;: [ { &quot;part_number&quot;: &quot;MB-VA-15-3040&quot;,
+                 &quot;received_qty&quot;: &quot;20.000&quot;, &quot;rejected_qty&quot;: &quot;0.000&quot;,
+                 &quot;accepted_qty&quot;: &quot;20.000&quot;, &quot;batch&quot;: &quot;&quot; } ] }
+]
+</code></pre>
+<p>Render it as a &quot;Receipts / Deliveries&quot; panel on the PO page so users can see
+each partial delivery (who, when, how much, which lot).</p>
+<hr>
+<h2>Rejections (edge case)</h2>
+<p>If a delivery has rejected units, only the <strong>accepted</strong> part
+(<code>received_qty − rejected_qty</code>) counts toward the order and enters stock.
+Rejected units <strong>do not</strong> close the line — you can receive a replacement later.
+So <code>remaining = ordered − cumulative accepted</code>.</p>
+<hr>
+<h2>How to confirm it&#39;s working</h2>
+<p>Create a PO for 100, then:</p>
+<ol>
+<li>Receive <code>40</code> → response shows line <code>received_qty: &quot;40.000&quot;</code>, <code>status: &quot;Partially Received&quot;</code>; remaining you compute = 60.</li>
+<li>Receive <code>20</code> → line <code>received_qty: &quot;60.000&quot;</code>; remaining = <strong>40</strong>. ✅</li>
+<li>Try to receive <code>50</code> → <code>400</code> (exceeds remaining 40).</li>
+<li>Receive <code>40</code> → line <code>received_qty: &quot;100.000&quot;</code>, <code>status: &quot;Received&quot;</code>.</li>
+</ol>
+<p>If step 2 shows 60 received / 40 remaining, you&#39;re wired correctly. If it shows
+20 received / 80 remaining, the UI is still sending the cumulative value — send
+the delta instead.</p>
+<hr>
+<p><em>Full contract: <code>FRONTEND_API_GUIDE.md</code> §7. Full release detail:
+<code>RELEASE_NOTES_1.0.2</code>.</em></p>
+
+<footer>Innopolis PLM backend · v1.0.2 · Goods receipt change guide · Generated from GOODS_RECEIPT_FRONTEND_GUIDE.md</footer>
+</body></html>

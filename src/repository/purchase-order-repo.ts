@@ -9,7 +9,7 @@ import {
   sql,
   SQL,
 } from "drizzle-orm";
-import { DB } from "../db/db-connection";
+import { DB, DbClient } from "../db/db-connection";
 import {
   NewPurchaseOrder,
   PoStatus,
@@ -41,7 +41,8 @@ export type PurchaseOrderRepoType = {
   list: (filters: PoFilters) => Promise<{ rows: PurchaseOrder[]; total: number }>;
   update: (
     id: string,
-    data: Partial<NewPurchaseOrder>
+    data: Partial<NewPurchaseOrder>,
+    db?: DbClient
   ) => Promise<PurchaseOrder | null>;
   softDelete: (id: string) => Promise<boolean>;
 };
@@ -123,10 +124,11 @@ const list = async (
 
 const update = async (
   id: string,
-  data: Partial<NewPurchaseOrder>
+  data: Partial<NewPurchaseOrder>,
+  db: DbClient = DB
 ): Promise<PurchaseOrder | null> => {
   try {
-    const [row] = await DB
+    const [row] = await db
       .update(purchaseOrders)
       .set({ ...data, updated_at: new Date() })
       .where(and(eq(purchaseOrders.id, id), isNull(purchaseOrders.deleted_at)))

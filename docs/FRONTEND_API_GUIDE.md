@@ -465,15 +465,18 @@ Drives the “BOM by supplier / category / lead-time / cost” views (FRD §11).
   set only by recording a goods receipt. Posting either to `/status` returns 400
   (“…set by recording a goods receipt, not by the status pipeline…”). Drive
   receiving through `/receive`, not `/status`.
-- `POST /:id/receive` (Purchase, Stores) → **records one goods receipt (GRN)**.
-  Body: `{ warehouse_id, note?, lines: [{ po_line_id, received_qty,
-  rejected_qty?, batch? }] }`. **`received_qty` is the qty that arrived in THIS
-  delivery** — it **accumulates** onto the line, so a PO can be received in
-  **multiple partial deliveries**: call `/receive` again for each shipment. The
-  cumulative received may not exceed the ordered qty (else `400` naming the
-  remaining). The PO is `Partially Received` until every line is full, then
-  `Received`. Each call books only that shipment's accepted qty
-  (`received − rejected`) into stock and creates a GRN record.
+- `POST /:id/receive` (Purchase, Stores) → **records one goods receipt (GRN)**,
+  written atomically (GRN + stock + PO status). Body: `{ warehouse_id, note?,
+  lines: [{ po_line_id, received_qty, rejected_qty?, batch? }] }`.
+  **`received_qty` is the qty that arrived in THIS delivery**; the **accepted**
+  part (`received − rejected`) **accumulates** onto the line, so a PO is received
+  in **multiple partial deliveries** — call `/receive` again per shipment.
+  Rejected units **don't** close the line (receive a replacement later).
+  **Cumulative accepted may not exceed the ordered qty** (else `400` naming the
+  remaining); a `po_line_id` may appear only once per call. A line's
+  `received_qty` on reads is therefore the **cumulative accepted** quantity. PO
+  is `Partially Received` until accepted meets ordered on every line, then
+  `Received`. Only accepted qty enters stock.
 - `GET /:id/receipts` → the **goods-receipt (GRN) history** for the PO, newest
   first: `[{ id, grn_number, po_id, warehouse_id, received_by,
   received_by_name/initials/hue, note, received_at, lines: [{ po_line_id,

@@ -9,7 +9,7 @@ import {
   sql,
   SQL,
 } from "drizzle-orm";
-import { DB } from "../db/db-connection";
+import { DB, DbClient } from "../db/db-connection";
 import {
   Availability,
   Lifecycle,
@@ -45,7 +45,11 @@ export type PartRepoType = {
   findById: (id: string) => Promise<PartWithOwner | null>;
   findByPartNumber: (partNumber: string) => Promise<Part | null>;
   list: (filters: PartFilters) => Promise<{ rows: Part[]; total: number }>;
-  update: (id: string, data: Partial<NewPart>) => Promise<Part | null>;
+  update: (
+    id: string,
+    data: Partial<NewPart>,
+    db?: DbClient
+  ) => Promise<Part | null>;
   softDelete: (id: string) => Promise<boolean>;
 };
 
@@ -147,10 +151,11 @@ const list = async (
 
 const update = async (
   id: string,
-  data: Partial<NewPart>
+  data: Partial<NewPart>,
+  db: DbClient = DB
 ): Promise<Part | null> => {
   try {
-    const [row] = await DB
+    const [row] = await db
       .update(parts)
       .set({ ...data, updated_at: new Date() })
       .where(and(eq(parts.id, id), isNull(parts.deleted_at)))

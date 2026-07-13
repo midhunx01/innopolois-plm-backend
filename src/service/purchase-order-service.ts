@@ -26,6 +26,7 @@ import {
   SupplierRepoType,
   WarehouseRepoType,
 } from "../repository";
+import { DB } from "../db/db-connection";
 import { ConflictError, NotFoundError, ValidationError } from "../util/error";
 import { postMovement } from "./inventory-service";
 
@@ -218,8 +219,11 @@ const updateStatus = async (
   return updated;
 };
 
-// Record goods receipt (FRD §13/§14). Updates per-line received_qty and the
-// PO's received_pct + status. Stock posting is handled by the Inventory module.
+// Record one goods-receipt / delivery (FRD §13/§14). `received_qty` per line is
+// the quantity that arrived in THIS delivery; the ACCEPTED part (received −
+// rejected) accumulates onto the line — so a PO is received across multiple
+// partial deliveries and only closes once the accepted quantity meets the order.
+// Everything is written atomically (GRN + lines + stock + PO status).
 const receive = async (
   id: string,
   dto: ReceivePoDtoType,
@@ -234,6 +238,10 @@ const receive = async (
     );
   }
 
+  // Validate the warehouse up front so nothing is written if it's wrong.
+  const warehouse = await deps.warehouseRepo.findById(dto.warehouse_id);
+  if (!warehouse) throw new ValidationError("warehouse_id does not exist");
+
   const lines = await deps.poLineRepo.listByPo(id);
   const lineById = new Map(lines.map((l) => [l.id, l]));
   const invDeps = {
@@ -247,15 +255,15 @@ const receive = async (
   const receivedAt = new Date();
 
   // ── Pass 1: validate the whole receipt before writing anything ────────────
-  // Each call is one partial delivery; received_qty is the qty that arrived NOW.
   const planned: {
     line: (typeof lines)[number];
     received: number;
     rejected: number;
     accepted: number;
-    newReceived: number;
+    newAccepted: number;
     batch: string;
   }[] = [];
+  const seen = new Set<string>();
 
   for (const r of dto.lines) {
     const line = lineById.get(r.po_line_id);
@@ -264,30 +272,43 @@ const receive = async (
         `po_line_id ${r.po_line_id} does not belong to this PO`
       );
     }
-    // Accumulate onto what was already received; block cumulative over-receipt.
-    const already = Number(line.received_qty);
-    const remaining = Number(line.quantity) - already;
-    if (r.received_qty > remaining) {
+    // A line may appear only once per receipt, else the two entries would be
+    // validated independently and double-post stock.
+    if (seen.has(r.po_line_id)) {
       throw new ValidationError(
-        `received_qty for ${line.part_number} exceeds the remaining ` +
-          `quantity (${remaining})`
+        `po_line_id ${r.po_line_id} appears more than once in this receipt`
       );
     }
+    seen.add(r.po_line_id);
+
     const rejected = r.rejected_qty ?? 0;
     if (rejected > r.received_qty) {
       throw new ValidationError(
         `rejected_qty for ${line.part_number} exceeds received quantity`
       );
     }
-    // Nothing physically received on this line → skip (no stock, no GRN line).
+    // Nothing physically arrived on this line → skip (no stock, no GRN line).
     if (r.received_qty <= 0) continue;
+
+    // Rejected units don't fulfil the order — only the accepted qty accumulates
+    // and counts against the remaining, so a rejected delivery keeps the line
+    // open for a replacement.
+    const accepted = r.received_qty - rejected;
+    const alreadyAccepted = Number(line.received_qty);
+    const remaining = Number(line.quantity) - alreadyAccepted;
+    if (accepted > remaining) {
+      throw new ValidationError(
+        `accepted quantity (received − rejected) for ${line.part_number} ` +
+          `exceeds the remaining quantity (${remaining})`
+      );
+    }
 
     planned.push({
       line,
       received: r.received_qty,
       rejected,
-      accepted: r.received_qty - rejected,
-      newReceived: already + r.received_qty,
+      accepted,
+      newAccepted: alreadyAccepted + accepted,
       batch: r.batch ?? "",
     });
   }
@@ -298,93 +319,116 @@ const receive = async (
     );
   }
 
-  // ── Pass 2: apply. Record the Goods Receipt Note (GRN) for this delivery ───
+  // GRN number comes from the sequence counter (outside the tx — a gap on a
+  // rare rollback is acceptable).
   const grnSeq = await deps.counterRepo.next("grn");
-  const grn = await deps.goodsReceiptRepo.create({
-    id: uuidv7(),
-    grn_number: `GRN-${String(grnSeq).padStart(4, "0")}`,
-    po_id: po.id,
-    warehouse_id: dto.warehouse_id,
-    received_by: userId,
-    note: dto.note ?? "",
-    received_at: receivedAt,
-  });
-  if (!grn) throw new ValidationError("Failed to record goods receipt");
-
+  const grnNumber = `GRN-${String(grnSeq).padStart(4, "0")}`;
+  const grnId = uuidv7();
   const grnLines: NewGoodsReceiptLine[] = [];
 
-  for (const p of planned) {
-    const { line, received, rejected, accepted, newReceived, batch } = p;
-
-    await deps.poLineRepo.update(line.id, {
-      received_qty: newReceived.toString(),
-    });
-    line.received_qty = newReceived.toString(); // reflect for recompute below
-
-    grnLines.push({
-      id: uuidv7(),
-      receipt_id: grn.id,
-      po_line_id: line.id,
-      part_id: line.part_id,
-      part_number: line.part_number,
-      received_qty: received.toString(),
-      rejected_qty: rejected.toString(),
-      accepted_qty: accepted.toString(),
-      batch,
-    });
-
-    // Post accepted goods into stock (FRD §14). warehouse_id is required, so a
-    // receipt always books a movement. Rejected qty is recorded on the movement
-    // but never increases on-hand.
-    await postMovement(
+  // ── Pass 2: apply everything atomically ───────────────────────────────────
+  const updated = await DB.transaction(async (tx) => {
+    const grn = await deps.goodsReceiptRepo.create(
       {
-        part_id: line.part_id,
+        id: grnId,
+        grn_number: grnNumber,
+        po_id: po.id,
         warehouse_id: dto.warehouse_id,
-        type: "purchase",
-        direction: "in",
-        quantity: accepted,
-        unit_cost: Number(line.unit_price),
-        inspection_status: accepted > 0 ? "Accepted" : "Rejected",
-        rejected_qty: rejected,
-        batch,
-        reference: grn.grn_number,
-        reference_id: po.id,
+        received_by: userId,
+        note: dto.note ?? "",
+        received_at: receivedAt,
       },
-      invDeps
+      tx
     );
+    if (!grn) throw new ValidationError("Failed to record goods receipt");
 
-    // This is a realised vendor purchase — record the price in the material's
-    // ledger and refresh its last_purchase_price / last_purchase_date.
-    await deps.partPriceHistoryRepo.create({
-      id: uuidv7(),
-      part_id: line.part_id,
-      unit_price: line.unit_price,
-      source: "Purchase",
-      vendor_id: po.supplier_id ?? null,
-      purchase_order_id: po.id,
-      reference: grn.grn_number,
-      quantity: accepted.toString(),
-      effective_date: receivedAt,
-    });
-    await deps.partRepo.update(line.part_id, {
-      last_purchase_price: line.unit_price,
-      last_purchase_date: receivedAt,
-      last_purchase_vendor_id: po.supplier_id ?? null,
-    });
-  }
+    for (const p of planned) {
+      const { line, received, rejected, accepted, newAccepted, batch } = p;
 
-  await deps.goodsReceiptRepo.createLines(grnLines);
+      await deps.poLineRepo.update(
+        line.id,
+        { received_qty: newAccepted.toString() },
+        tx
+      );
+      line.received_qty = newAccepted.toString(); // reflect for recompute below
 
-  const totalQty = lines.reduce((s, l) => s + Number(l.quantity), 0);
-  const totalReceived = lines.reduce((s, l) => s + Number(l.received_qty), 0);
-  const pct = totalQty > 0 ? round2((totalReceived / totalQty) * 100) : 0;
-  const status: PoStatus =
-    totalReceived >= totalQty && totalQty > 0 ? "Received" : "Partially Received";
+      grnLines.push({
+        id: uuidv7(),
+        receipt_id: grn.id,
+        po_line_id: line.id,
+        part_id: line.part_id,
+        part_number: line.part_number,
+        received_qty: received.toString(),
+        rejected_qty: rejected.toString(),
+        accepted_qty: accepted.toString(),
+        batch,
+      });
 
-  const updated = await deps.poRepo.update(id, {
-    received_pct: pct.toString(),
-    status,
+      // Only accepted goods enter stock and count as a realised purchase; a
+      // fully-rejected delivery is recorded on the GRN but posts no movement.
+      if (accepted > 0) {
+        await postMovement(
+          {
+            part_id: line.part_id,
+            warehouse_id: dto.warehouse_id,
+            type: "purchase",
+            direction: "in",
+            quantity: accepted,
+            unit_cost: Number(line.unit_price),
+            inspection_status: "Accepted",
+            rejected_qty: rejected,
+            batch,
+            reference: grnNumber,
+            reference_id: po.id,
+          },
+          invDeps,
+          tx
+        );
+
+        await deps.partPriceHistoryRepo.create(
+          {
+            id: uuidv7(),
+            part_id: line.part_id,
+            unit_price: line.unit_price,
+            source: "Purchase",
+            vendor_id: po.supplier_id ?? null,
+            purchase_order_id: po.id,
+            reference: grnNumber,
+            quantity: accepted.toString(),
+            effective_date: receivedAt,
+          },
+          tx
+        );
+        await deps.partRepo.update(
+          line.part_id,
+          {
+            last_purchase_price: line.unit_price,
+            last_purchase_date: receivedAt,
+            last_purchase_vendor_id: po.supplier_id ?? null,
+          },
+          tx
+        );
+      }
+    }
+
+    await deps.goodsReceiptRepo.createLines(grnLines, tx);
+
+    const totalQty = lines.reduce((s, l) => s + Number(l.quantity), 0);
+    const totalReceived = lines.reduce((s, l) => s + Number(l.received_qty), 0);
+    const pct = totalQty > 0 ? round2((totalReceived / totalQty) * 100) : 0;
+    const status: PoStatus =
+      totalReceived >= totalQty && totalQty > 0
+        ? "Received"
+        : "Partially Received";
+
+    const updatedPo = await deps.poRepo.update(
+      id,
+      { received_pct: pct.toString(), status },
+      tx
+    );
+    return updatedPo;
   });
+
   const refreshedLines = await deps.poLineRepo.listByPo(id);
   return { ...updated!, lines: refreshedLines };
 };

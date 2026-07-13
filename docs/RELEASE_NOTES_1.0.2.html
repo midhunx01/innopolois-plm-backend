@@ -144,27 +144,33 @@ arrived in THIS delivery</strong> (a delta). It <strong>accumulates</strong> ont
 <p>Rules the backend enforces (surface these in the UI):</p>
 <ul>
 <li>The PO must be <strong><code>Open</code></strong> or <strong><code>Partially Received</code></strong> to receive.</li>
-<li><code>received_qty</code> accumulates; <strong>cumulative received may not exceed the ordered
-qty</strong> → <code>400</code>.</li>
+<li><strong>Accepted qty = <code>received_qty − rejected_qty</code></strong>, and it&#39;s the <strong>accepted</strong>
+amount that <strong>accumulates</strong> onto the line and counts toward completion.
+Rejected units <strong>don&#39;t</strong> close the line — receive a replacement later.</li>
+<li><strong>Cumulative accepted may not exceed the ordered qty</strong> → <code>400</code> (naming the
+remaining). Gross <code>received_qty</code> may exceed remaining if some are rejected.</li>
 <li><code>rejected_qty</code> may not exceed this delivery&#39;s <code>received_qty</code> → <code>400</code>.</li>
+<li>The <strong>same <code>po_line_id</code> may appear only once</strong> per receipt → else <code>400</code>.</li>
 <li>At least one line must have <code>received_qty &gt; 0</code> → else <code>400</code>.</li>
-<li>Accepted qty booked to stock = <code>received_qty − rejected_qty</code>.</li>
+<li>The whole receipt is <strong>atomic</strong> — GRN, stock and PO status commit together or
+not at all.</li>
 </ul>
 <h3>Success response (<code>200</code>)</h3>
-<p><code>data</code> is the updated PO <strong>with its lines</strong> (note the accumulated
-<code>received_qty</code> and the recomputed <code>received_pct</code> / <code>status</code>):</p>
+<p><code>data</code> is the updated PO <strong>with its lines</strong>. On a line, <strong><code>received_qty</code> is the
+cumulative <em>accepted</em> quantity</strong> (rejects excluded), which drives
+<code>received_pct</code> / <code>status</code>:</p>
 <pre><code class="language-jsonc">{
   &quot;success&quot;: true,
   &quot;message&quot;: &quot;Goods receipt recorded&quot;,
   &quot;data&quot;: {
     &quot;id&quot;: &quot;018f-…&quot;, &quot;number&quot;: &quot;PO-0007&quot;, &quot;supplier_id&quot;: &quot;018f-…&quot;,
-    &quot;status&quot;: &quot;Partially Received&quot;,     // → &quot;Received&quot; when every line is full
-    &quot;received_pct&quot;: &quot;60.00&quot;,
+    &quot;status&quot;: &quot;Partially Received&quot;,     // → &quot;Received&quot; when accepted meets ordered on every line
+    &quot;received_pct&quot;: &quot;50.00&quot;,
     &quot;lines&quot;: [
       {
         &quot;id&quot;: &quot;018f-…&quot;, &quot;part_id&quot;: &quot;018f-…&quot;, &quot;part_number&quot;: &quot;MB-VA-15-3040&quot;,
         &quot;quantity&quot;: &quot;10.000&quot;,           // ordered
-        &quot;received_qty&quot;: &quot;6.000&quot;,        // cumulative received so far
+        &quot;received_qty&quot;: &quot;5.000&quot;,        // cumulative ACCEPTED so far (6 received − 1 rejected)
         &quot;unit_price&quot;: &quot;1199.00&quot;, &quot;uom&quot;: &quot;Nos&quot;
       }
     ]
@@ -180,12 +186,16 @@ qty</strong> → <code>400</code>.</li>
 </tr>
 </thead>
 <tbody><tr>
-<td>Over-receipt</td>
-<td><code>received_qty for MB-VA-15-3040 exceeds the remaining quantity (4)</code></td>
+<td>Over-receipt (accepted)</td>
+<td><code>accepted quantity (received − rejected) for MB-VA-15-3040 exceeds the remaining quantity (4)</code></td>
 </tr>
 <tr>
 <td>Rejected &gt; received</td>
 <td><code>rejected_qty for MB-VA-15-3040 exceeds received quantity</code></td>
+</tr>
+<tr>
+<td>Duplicate line in request</td>
+<td><code>po_line_id … appears more than once in this receipt</code></td>
 </tr>
 <tr>
 <td>Nothing received</td>
@@ -194,6 +204,10 @@ qty</strong> → <code>400</code>.</li>
 <tr>
 <td>Wrong PO state</td>
 <td><code>PO must be Open to receive goods (currently &quot;Received&quot;)</code></td>
+</tr>
+<tr>
+<td>Bad warehouse</td>
+<td><code>warehouse_id does not exist</code></td>
 </tr>
 <tr>
 <td>Line not on PO</td>
@@ -205,8 +219,9 @@ qty</strong> → <code>400</code>.</li>
 <li>Label the receive field <strong>&quot;Received now&quot;</strong> (this delivery) — <strong>not</strong> a running
 total. If your current UI sends the cumulative figure on a second receipt,
 change it to send only the newly-arrived quantity.</li>
-<li>Compute and show <strong>remaining per line = <code>quantity − received_qty</code></strong>; pre-fill
-&quot;Received now&quot; with the remaining, and block input above it.</li>
+<li>Compute and show <strong>remaining per line = <code>quantity − received_qty</code></strong> (where
+<code>received_qty</code> is cumulative accepted); pre-fill &quot;Received now&quot; with the
+remaining. Note gross received may exceed remaining when some are rejected.</li>
 <li>Keep the <strong>Receive</strong> action enabled while <code>status</code> is <code>Open</code> <strong>or</strong>
 <code>Partially Received</code>; hide/disable it once <code>Received</code>.</li>
 <li>Show the over-receipt/other <code>400</code> messages inline on the offending line.</li>
@@ -325,13 +340,16 @@ the per-line received/accepted/rejected + batch. A timeline reads well.</li>
 </ul>
 <hr>
 <h2>Worked example (10 ordered, two deliveries)</h2>
+<p>Line <code>received_qty</code> tracks the <strong>cumulative accepted</strong> quantity.</p>
 <ol>
-<li><strong>Receive 6</strong> → <code>POST /receive</code> <code>{ lines:[{ po_line_id, received_qty: 6, rejected_qty: 1 }] }</code>
-→ line <code>received_qty</code> = <code>6</code>, stock <strong>+5</strong> (6 − 1 rejected), PO <code>Partially Received</code>, <strong>GRN-0001</strong>.</li>
-<li><strong>Receive 4</strong> → <code>POST /receive</code> <code>{ lines:[{ po_line_id, received_qty: 4 }] }</code>
-→ line <code>received_qty</code> = <code>10</code>, stock <strong>+4</strong>, PO <code>Received</code>, <strong>GRN-0002</strong>.</li>
-<li><strong>Try 5 more</strong> → <code>400 received_qty for … exceeds the remaining quantity (0)</code>.</li>
-<li><code>GET /:id/receipts</code> → <code>[GRN-0002, GRN-0001]</code>, each with its lines.</li>
+<li><strong>Receive 6, reject 1</strong> → <code>POST /receive</code> <code>{ lines:[{ po_line_id, received_qty: 6, rejected_qty: 1 }] }</code>
+→ accepted <strong>5</strong>, line <code>received_qty</code> = <code>5</code>, stock <strong>+5</strong>, PO <code>Partially Received</code>, <strong>GRN-0001</strong>.</li>
+<li><strong>Receive 5</strong> → <code>POST /receive</code> <code>{ lines:[{ po_line_id, received_qty: 5 }] }</code>
+→ accepted <strong>5</strong>, line <code>received_qty</code> = <code>10</code>, stock <strong>+5</strong>, PO <code>Received</code>, <strong>GRN-0002</strong>.
+(The 1 earlier reject didn&#39;t close the line — you received a replacement.)</li>
+<li><strong>Try 1 more</strong> → <code>400 accepted quantity (received − rejected) for … exceeds the remaining quantity (0)</code>.</li>
+<li><code>GET /:id/receipts</code> → <code>[GRN-0002, GRN-0001]</code>, each with its lines
+(GRN-0001 shows received 6 / rejected 1 / accepted 5).</li>
 </ol>
 <hr>
 <h2>Migration checklist (frontend)</h2>

@@ -1,5 +1,5 @@
 import { desc, eq } from "drizzle-orm";
-import { DB } from "../db/db-connection";
+import { DB, DbClient } from "../db/db-connection";
 import {
   NewPartPriceHistory,
   PartPriceHistory,
@@ -8,16 +8,20 @@ import {
 import { logger } from "../util";
 
 export type PartPriceHistoryRepoType = {
-  create: (data: NewPartPriceHistory) => Promise<PartPriceHistory | null>;
+  create: (
+    data: NewPartPriceHistory,
+    db?: DbClient
+  ) => Promise<PartPriceHistory | null>;
   // Newest price event first.
   listByPart: (partId: string) => Promise<PartPriceHistory[]>;
 };
 
 const create = async (
-  data: NewPartPriceHistory
+  data: NewPartPriceHistory,
+  db: DbClient = DB
 ): Promise<PartPriceHistory | null> => {
   try {
-    const [row] = await DB.insert(partPriceHistory).values(data).returning();
+    const [row] = await db.insert(partPriceHistory).values(data).returning();
     return row ?? null;
   } catch (error) {
     logger.error(`[PartPriceHistory Repo]: error creating: ${error}`);

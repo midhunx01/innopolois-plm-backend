@@ -1,5 +1,5 @@
 import { asc, desc, eq, getTableColumns, inArray } from "drizzle-orm";
-import { DB } from "../db/db-connection";
+import { DB, DbClient } from "../db/db-connection";
 import {
   GoodsReceipt,
   GoodsReceiptLine,
@@ -20,14 +20,23 @@ export type GoodsReceiptWithLines = GoodsReceipt & {
 };
 
 export type GoodsReceiptRepoType = {
-  create: (data: NewGoodsReceipt) => Promise<GoodsReceipt | null>;
-  createLines: (data: NewGoodsReceiptLine[]) => Promise<GoodsReceiptLine[]>;
+  create: (
+    data: NewGoodsReceipt,
+    db?: DbClient
+  ) => Promise<GoodsReceipt | null>;
+  createLines: (
+    data: NewGoodsReceiptLine[],
+    db?: DbClient
+  ) => Promise<GoodsReceiptLine[]>;
   listByPo: (poId: string) => Promise<GoodsReceiptWithLines[]>;
 };
 
-const create = async (data: NewGoodsReceipt): Promise<GoodsReceipt | null> => {
+const create = async (
+  data: NewGoodsReceipt,
+  db: DbClient = DB
+): Promise<GoodsReceipt | null> => {
   try {
-    const [row] = await DB.insert(goodsReceipts).values(data).returning();
+    const [row] = await db.insert(goodsReceipts).values(data).returning();
     return row ?? null;
   } catch (error) {
     logger.error(`[GoodsReceipt Repo]: error creating: ${error}`);
@@ -36,11 +45,12 @@ const create = async (data: NewGoodsReceipt): Promise<GoodsReceipt | null> => {
 };
 
 const createLines = async (
-  data: NewGoodsReceiptLine[]
+  data: NewGoodsReceiptLine[],
+  db: DbClient = DB
 ): Promise<GoodsReceiptLine[]> => {
   try {
     if (data.length === 0) return [];
-    return await DB.insert(goodsReceiptLines).values(data).returning();
+    return await db.insert(goodsReceiptLines).values(data).returning();
   } catch (error) {
     logger.error(`[GoodsReceipt Repo]: error creating lines: ${error}`);
     throw error;

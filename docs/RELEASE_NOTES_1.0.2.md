@@ -55,28 +55,34 @@ arrived in THIS delivery** (a delta). It **accumulates** onto the PO line.
 ```
 Rules the backend enforces (surface these in the UI):
 - The PO must be **`Open`** or **`Partially Received`** to receive.
-- `received_qty` accumulates; **cumulative received may not exceed the ordered
-  qty** → `400`.
+- **Accepted qty = `received_qty − rejected_qty`**, and it's the **accepted**
+  amount that **accumulates** onto the line and counts toward completion.
+  Rejected units **don't** close the line — receive a replacement later.
+- **Cumulative accepted may not exceed the ordered qty** → `400` (naming the
+  remaining). Gross `received_qty` may exceed remaining if some are rejected.
 - `rejected_qty` may not exceed this delivery's `received_qty` → `400`.
+- The **same `po_line_id` may appear only once** per receipt → else `400`.
 - At least one line must have `received_qty > 0` → else `400`.
-- Accepted qty booked to stock = `received_qty − rejected_qty`.
+- The whole receipt is **atomic** — GRN, stock and PO status commit together or
+  not at all.
 
 ### Success response (`200`)
-`data` is the updated PO **with its lines** (note the accumulated
-`received_qty` and the recomputed `received_pct` / `status`):
+`data` is the updated PO **with its lines**. On a line, **`received_qty` is the
+cumulative *accepted* quantity** (rejects excluded), which drives
+`received_pct` / `status`:
 ```jsonc
 {
   "success": true,
   "message": "Goods receipt recorded",
   "data": {
     "id": "018f-…", "number": "PO-0007", "supplier_id": "018f-…",
-    "status": "Partially Received",     // → "Received" when every line is full
-    "received_pct": "60.00",
+    "status": "Partially Received",     // → "Received" when accepted meets ordered on every line
+    "received_pct": "50.00",
     "lines": [
       {
         "id": "018f-…", "part_id": "018f-…", "part_number": "MB-VA-15-3040",
         "quantity": "10.000",           // ordered
-        "received_qty": "6.000",        // cumulative received so far
+        "received_qty": "5.000",        // cumulative ACCEPTED so far (6 received − 1 rejected)
         "unit_price": "1199.00", "uom": "Nos"
       }
     ]
@@ -87,18 +93,21 @@ Rules the backend enforces (surface these in the UI):
 ### Error responses (`400`, envelope `{ success:false, error }`)
 | Situation | `error` message |
 |-----------|-----------------|
-| Over-receipt | `received_qty for MB-VA-15-3040 exceeds the remaining quantity (4)` |
+| Over-receipt (accepted) | `accepted quantity (received − rejected) for MB-VA-15-3040 exceeds the remaining quantity (4)` |
 | Rejected > received | `rejected_qty for MB-VA-15-3040 exceeds received quantity` |
+| Duplicate line in request | `po_line_id … appears more than once in this receipt` |
 | Nothing received | `At least one line must have a received_qty greater than zero` |
 | Wrong PO state | `PO must be Open to receive goods (currently "Received")` |
+| Bad warehouse | `warehouse_id does not exist` |
 | Line not on PO | `po_line_id … does not belong to this PO` |
 
 ### UI work
 - Label the receive field **"Received now"** (this delivery) — **not** a running
   total. If your current UI sends the cumulative figure on a second receipt,
   change it to send only the newly-arrived quantity.
-- Compute and show **remaining per line = `quantity − received_qty`**; pre-fill
-  "Received now" with the remaining, and block input above it.
+- Compute and show **remaining per line = `quantity − received_qty`** (where
+  `received_qty` is cumulative accepted); pre-fill "Received now" with the
+  remaining. Note gross received may exceed remaining when some are rejected.
 - Keep the **Receive** action enabled while `status` is `Open` **or**
   `Partially Received`; hide/disable it once `Received`.
 - Show the over-receipt/other `400` messages inline on the offending line.
@@ -170,12 +179,16 @@ Every `/receive` call creates one **GRN**. This returns them, newest first.
 
 ## Worked example (10 ordered, two deliveries)
 
-1. **Receive 6** → `POST /receive` `{ lines:[{ po_line_id, received_qty: 6, rejected_qty: 1 }] }`
-   → line `received_qty` = `6`, stock **+5** (6 − 1 rejected), PO `Partially Received`, **GRN-0001**.
-2. **Receive 4** → `POST /receive` `{ lines:[{ po_line_id, received_qty: 4 }] }`
-   → line `received_qty` = `10`, stock **+4**, PO `Received`, **GRN-0002**.
-3. **Try 5 more** → `400 received_qty for … exceeds the remaining quantity (0)`.
-4. `GET /:id/receipts` → `[GRN-0002, GRN-0001]`, each with its lines.
+Line `received_qty` tracks the **cumulative accepted** quantity.
+
+1. **Receive 6, reject 1** → `POST /receive` `{ lines:[{ po_line_id, received_qty: 6, rejected_qty: 1 }] }`
+   → accepted **5**, line `received_qty` = `5`, stock **+5**, PO `Partially Received`, **GRN-0001**.
+2. **Receive 5** → `POST /receive` `{ lines:[{ po_line_id, received_qty: 5 }] }`
+   → accepted **5**, line `received_qty` = `10`, stock **+5**, PO `Received`, **GRN-0002**.
+   (The 1 earlier reject didn't close the line — you received a replacement.)
+3. **Try 1 more** → `400 accepted quantity (received − rejected) for … exceeds the remaining quantity (0)`.
+4. `GET /:id/receipts` → `[GRN-0002, GRN-0001]`, each with its lines
+   (GRN-0001 shows received 6 / rejected 1 / accepted 5).
 
 ---
 

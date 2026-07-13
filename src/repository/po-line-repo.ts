@@ -1,5 +1,5 @@
 import { and, asc, eq, isNull } from "drizzle-orm";
-import { DB } from "../db/db-connection";
+import { DB, DbClient } from "../db/db-connection";
 import { NewPoLine, PoLine, poLines } from "../db/schema";
 import { logger } from "../util";
 
@@ -7,7 +7,11 @@ export type PoLineRepoType = {
   createMany: (data: NewPoLine[]) => Promise<PoLine[]>;
   findById: (id: string) => Promise<PoLine | null>;
   listByPo: (poId: string) => Promise<PoLine[]>;
-  update: (id: string, data: Partial<NewPoLine>) => Promise<PoLine | null>;
+  update: (
+    id: string,
+    data: Partial<NewPoLine>,
+    db?: DbClient
+  ) => Promise<PoLine | null>;
 };
 
 const createMany = async (data: NewPoLine[]): Promise<PoLine[]> => {
@@ -49,10 +53,11 @@ const listByPo = async (poId: string): Promise<PoLine[]> => {
 
 const update = async (
   id: string,
-  data: Partial<NewPoLine>
+  data: Partial<NewPoLine>,
+  db: DbClient = DB
 ): Promise<PoLine | null> => {
   try {
-    const [row] = await DB
+    const [row] = await db
       .update(poLines)
       .set({ ...data, updated_at: new Date() })
       .where(and(eq(poLines.id, id), isNull(poLines.deleted_at)))

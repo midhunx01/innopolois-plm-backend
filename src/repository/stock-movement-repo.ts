@@ -1,5 +1,5 @@
 import { and, desc, eq, getTableColumns, sql, SQL } from "drizzle-orm";
-import { DB } from "../db/db-connection";
+import { DB, DbClient } from "../db/db-connection";
 import {
   NewStockMovement,
   StockMovement,
@@ -27,7 +27,10 @@ export type StockMovementWithActor = StockMovement & {
 };
 
 export type StockMovementRepoType = {
-  create: (data: NewStockMovement) => Promise<StockMovement | null>;
+  create: (
+    data: NewStockMovement,
+    db?: DbClient
+  ) => Promise<StockMovement | null>;
   list: (
     filters: MovementFilters
   ) => Promise<{ rows: StockMovementWithActor[]; total: number }>;
@@ -43,10 +46,11 @@ const buildWhere = (filters: MovementFilters): SQL | undefined => {
 };
 
 const create = async (
-  data: NewStockMovement
+  data: NewStockMovement,
+  db: DbClient = DB
 ): Promise<StockMovement | null> => {
   try {
-    const [row] = await DB.insert(stockMovements).values(data).returning();
+    const [row] = await db.insert(stockMovements).values(data).returning();
     return row ?? null;
   } catch (error) {
     logger.error(`[StockMovement Repo]: error creating: ${error}`);

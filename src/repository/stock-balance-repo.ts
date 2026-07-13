@@ -1,5 +1,5 @@
 import { and, asc, desc, eq, ilike, lte, or, sql, SQL } from "drizzle-orm";
-import { DB } from "../db/db-connection";
+import { DB, DbClient } from "../db/db-connection";
 import {
   Availability,
   NewStockBalance,
@@ -25,10 +25,14 @@ export interface WarehouseStockSummary {
 }
 
 export type StockBalanceRepoType = {
-  create: (data: NewStockBalance) => Promise<StockBalance | null>;
+  create: (
+    data: NewStockBalance,
+    db?: DbClient
+  ) => Promise<StockBalance | null>;
   findByPartAndWarehouse: (
     partId: string,
-    warehouseId: string
+    warehouseId: string,
+    db?: DbClient
   ) => Promise<StockBalance | null>;
   list: (
     filters: StockFilters
@@ -36,9 +40,10 @@ export type StockBalanceRepoType = {
   listLowStock: () => Promise<StockBalance[]>;
   update: (
     id: string,
-    data: Partial<NewStockBalance>
+    data: Partial<NewStockBalance>,
+    db?: DbClient
   ) => Promise<StockBalance | null>;
-  totalOnHandForPart: (partId: string) => Promise<number>;
+  totalOnHandForPart: (partId: string, db?: DbClient) => Promise<number>;
   warehouseSummary: (warehouseId: string) => Promise<WarehouseStockSummary>;
 };
 
@@ -62,9 +67,12 @@ const buildWhere = (filters: StockFilters): SQL | undefined => {
   return clauses.length ? and(...clauses) : undefined;
 };
 
-const create = async (data: NewStockBalance): Promise<StockBalance | null> => {
+const create = async (
+  data: NewStockBalance,
+  db: DbClient = DB
+): Promise<StockBalance | null> => {
   try {
-    const [row] = await DB.insert(stockBalances).values(data).returning();
+    const [row] = await db.insert(stockBalances).values(data).returning();
     return row ?? null;
   } catch (error) {
     logger.error(`[StockBalance Repo]: error creating: ${error}`);
@@ -74,10 +82,11 @@ const create = async (data: NewStockBalance): Promise<StockBalance | null> => {
 
 const findByPartAndWarehouse = async (
   partId: string,
-  warehouseId: string
+  warehouseId: string,
+  db: DbClient = DB
 ): Promise<StockBalance | null> => {
   try {
-    const [row] = await DB
+    const [row] = await db
       .select()
       .from(stockBalances)
       .where(
@@ -133,10 +142,11 @@ const listLowStock = async (): Promise<StockBalance[]> => {
 
 const update = async (
   id: string,
-  data: Partial<NewStockBalance>
+  data: Partial<NewStockBalance>,
+  db: DbClient = DB
 ): Promise<StockBalance | null> => {
   try {
-    const [row] = await DB
+    const [row] = await db
       .update(stockBalances)
       .set({ ...data, updated_at: new Date() })
       .where(eq(stockBalances.id, id))
@@ -148,9 +158,12 @@ const update = async (
   }
 };
 
-const totalOnHandForPart = async (partId: string): Promise<number> => {
+const totalOnHandForPart = async (
+  partId: string,
+  db: DbClient = DB
+): Promise<number> => {
   try {
-    const [row] = await DB
+    const [row] = await db
       .select({
         total: sql<number>`coalesce(sum(${stockBalances.on_hand}), 0)::float`,
       })

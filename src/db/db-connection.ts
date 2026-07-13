@@ -15,6 +15,13 @@ const pool = new Pool({
 
 export const DB: NodePgDatabase<typeof schema> = drizzle(pool, { schema });
 
+// Either the pooled DB or a transaction handle. Repo methods that participate in
+// a transaction accept this (defaulting to `DB`) so callers can run several
+// writes atomically via `DB.transaction(async (tx) => { repo.x(..., tx) })`.
+export type DbClient =
+  | typeof DB
+  | Parameters<Parameters<typeof DB.transaction>[0]>[0];
+
 export async function connectToDatabase(): Promise<void> {
   try {
     const client = await pool.connect();
