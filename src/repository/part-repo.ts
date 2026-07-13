@@ -4,6 +4,7 @@ import {
   eq,
   getTableColumns,
   ilike,
+  inArray,
   isNull,
   or,
   sql,
@@ -16,7 +17,9 @@ import {
   NewPart,
   Part,
   SourcingType,
+  partResourceSpecs,
   parts,
+  resourceSpecs,
   users,
 } from "../db/schema";
 import { logger } from "../util";
@@ -30,7 +33,7 @@ export type PartWithOwner = Part & {
 };
 
 export interface PartFilters {
-  search?: string; // code / name / remarks / drawing / make
+  search?: string; // code / name / remarks / drawing / make / resource spec
   categoryId?: string;
   subtypeId?: string;
   lifecycle?: Lifecycle;
@@ -58,13 +61,32 @@ const buildWhere = (filters: PartFilters): SQL | undefined => {
 
   if (filters.search) {
     const term = `%${filters.search}%`;
+    // Materials linked (many-to-many) to a resource spec whose code / name /
+    // description matches the term.
+    const partsByResourceSpec = DB.select({
+      id: partResourceSpecs.part_id,
+    })
+      .from(partResourceSpecs)
+      .innerJoin(
+        resourceSpecs,
+        eq(resourceSpecs.id, partResourceSpecs.resource_spec_id)
+      )
+      .where(
+        or(
+          ilike(resourceSpecs.code, term),
+          ilike(resourceSpecs.name, term),
+          ilike(resourceSpecs.description, term)
+        )
+      );
+
     clauses.push(
       or(
         ilike(parts.part_number, term),
         ilike(parts.name, term),
         ilike(parts.remarks, term),
         ilike(parts.drawing_ref, term),
-        ilike(parts.make, term)
+        ilike(parts.make, term),
+        inArray(parts.id, partsByResourceSpec)
       )
     );
   }

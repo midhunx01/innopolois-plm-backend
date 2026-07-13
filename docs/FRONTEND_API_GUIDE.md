@@ -270,7 +270,8 @@ purchase_order_id, reference (PO number or "Initial"), quantity,
 effective_date`. Newest first.
 
 **List** `GET /api/parts` *(paginated)* — query params:
-`search` (code/name/remarks/drawing/make), `categoryId`, `subtypeId`,
+`search` (code/name/remarks/drawing/make/resource-spec code·name·description),
+`categoryId`, `subtypeId`,
 `lifecycle`, `availability`, `sourcing`, `page`, `pageSize`.
 
 **Other:** `GET /api/parts/:id` (adds owner fields `owner_name`,
