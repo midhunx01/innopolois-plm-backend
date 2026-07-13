@@ -6,82 +6,130 @@
 <title>Innopolis PLM — User Guide</title>
 <style>
   :root{
-    --fg:#1c2330; --muted:#5b6675; --line:#e3e8ef; --bg:#ffffff;
-    --accent:#6d28d9; --accent-soft:#f3effd; --code-bg:#0f172a; --code-fg:#e2e8f0;
+    --fg:#1c2330; --muted:#5b6675; --line:#e6e8ef; --bg:#ffffff;
+    --accent:#6d28d9; --accent-2:#9333ea; --accent-soft:#f3effd; --accent-ink:#4c1d95;
+    --code-bg:#0f172a; --code-fg:#e2e8f0;
     --green:#15803d; --green-bg:#e9f7ef; --amber:#92600a; --amber-bg:#fdf4e3;
     --red:#b42318; --red-bg:#fdecea; --blue:#1d4ed8; --blue-bg:#eaf0fd;
   }
   *{box-sizing:border-box}
   html{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
   body{
-    font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    color:var(--fg); background:var(--bg); margin:0 auto; padding:0 28px 60px; max-width:920px;
+    font:15px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--fg); background:var(--bg); margin:0 auto; padding:0 30px 64px; max-width:940px;
   }
-  header{ padding:40px 0 20px; border-bottom:3px solid var(--accent); margin-bottom:8px; }
-  .eyebrow{ color:var(--accent); font-weight:700; letter-spacing:.08em; text-transform:uppercase; font-size:12px; }
-  h1{ font-size:32px; margin:6px 0 6px; letter-spacing:-.01em; }
-  .sub{ color:var(--muted); font-size:14px; }
-  h2{ font-size:21px; margin:36px 0 10px; padding-bottom:6px; border-bottom:1px solid var(--line); }
-  h3{ font-size:16px; margin:22px 0 6px; }
-  h4{ font-size:14px; margin:16px 0 4px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
-  p{ margin:8px 0; }
-  code{ font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace; font-size:.88em;
-    background:var(--accent-soft); color:#4c1d95; padding:1px 6px; border-radius:5px; }
-  table{ border-collapse:collapse; width:100%; margin:12px 0; font-size:13.5px; }
-  th,td{ text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
-  th{ background:#f7f8fb; font-weight:600; }
-  ul,ol{ margin:8px 0; padding-left:22px; } li{ margin:4px 0; }
+
+  /* ── Hero ── */
+  .hero{
+    margin:0 -30px 8px; padding:52px 30px 30px;
+    background:
+      radial-gradient(1200px 300px at 80% -40%, rgba(147,51,234,.20), transparent 60%),
+      linear-gradient(135deg, #2a0f5b 0%, #6d28d9 55%, #9333ea 100%);
+    color:#fff;
+  }
+  .hero .eyebrow{ color:#e9d5ff; font-weight:700; letter-spacing:.14em; text-transform:uppercase; font-size:11.5px; }
+  .hero h1{ font-size:40px; margin:8px 0 6px; letter-spacing:-.02em; line-height:1.05; }
+  .hero .sub{ color:#ede9fe; font-size:15px; max-width:640px; }
+  .chips{ margin-top:16px; display:flex; flex-wrap:wrap; gap:8px; }
+  .chip{ background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.25); color:#fff;
+    font-size:11.5px; font-weight:600; padding:4px 11px; border-radius:999px; letter-spacing:.02em; }
+
+  h2{ font-size:22px; margin:40px 0 12px; padding-bottom:8px; border-bottom:2px solid var(--accent-soft); display:flex; align-items:center; gap:10px; }
+  h2 .num{ display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; flex:0 0 26px;
+    background:var(--accent); color:#fff; border-radius:8px; font-size:13px; font-weight:700; }
+  h2 .ico{ font-size:20px; }
+  h3{ font-size:16.5px; margin:22px 0 6px; }
+  h4{ font-size:13px; margin:16px 0 4px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
+  p{ margin:9px 0; }
+  code{ font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace; font-size:.86em;
+    background:var(--accent-soft); color:var(--accent-ink); padding:1px 6px; border-radius:5px; }
+
+  table{ border-collapse:collapse; width:100%; margin:14px 0; font-size:13.5px; }
+  th,td{ text-align:left; padding:9px 11px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th{ background:var(--accent-soft); color:var(--accent-ink); font-weight:700; }
+  tr:nth-child(even) td{ background:#fbfaff; }
+  ul,ol{ margin:9px 0; padding-left:22px; } li{ margin:5px 0; }
   .muted{ color:var(--muted); } .small{ font-size:12.5px; }
-  .note{ background:var(--accent-soft); border-left:4px solid var(--accent); padding:10px 14px; border-radius:0 8px 8px 0; margin:12px 0; font-size:13.5px; }
-  .warn{ background:var(--amber-bg); border-left:4px solid var(--amber); padding:10px 14px; border-radius:0 8px 8px 0; margin:12px 0; font-size:13.5px; }
-  .tip{ background:var(--green-bg); border-left:4px solid var(--green); padding:10px 14px; border-radius:0 8px 8px 0; margin:12px 0; font-size:13.5px; }
-  .pill{ display:inline-block; font-weight:700; font-size:11px; padding:2px 8px; border-radius:6px; letter-spacing:.03em; background:var(--accent-soft); color:#4c1d95; }
-  .flow{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin:14px 0; font-size:13px; }
-  .flow .step{ background:#f7f8fb; border:1px solid var(--line); border-radius:8px; padding:6px 12px; font-weight:600; }
-  .flow .arrow{ color:var(--accent); font-weight:700; }
-  .toc{ columns:2; column-gap:32px; font-size:13.5px; }
-  .toc a{ color:var(--fg); text-decoration:none; }
-  .card{ border:1px solid var(--line); border-radius:12px; padding:4px 18px 14px; margin:14px 0; }
-  .big-code{ font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace; font-size:20px; font-weight:700;
-    background:var(--code-bg); color:#e2e8f0; padding:12px 18px; border-radius:10px; display:inline-block; letter-spacing:.06em; }
-  footer{ margin-top:44px; padding-top:14px; border-top:1px solid var(--line); color:var(--muted); font-size:12px; }
+
+  .note{ background:var(--accent-soft); border-left:4px solid var(--accent); padding:11px 15px; border-radius:0 10px 10px 0; margin:14px 0; font-size:13.5px; }
+  .warn{ background:var(--amber-bg); border-left:4px solid var(--amber); padding:11px 15px; border-radius:0 10px 10px 0; margin:14px 0; font-size:13.5px; }
+  .tip{ background:var(--green-bg); border-left:4px solid var(--green); padding:11px 15px; border-radius:0 10px 10px 0; margin:14px 0; font-size:13.5px; }
+
+  .new{ display:inline-block; font-weight:800; font-size:9.5px; padding:2px 7px; border-radius:999px; letter-spacing:.06em;
+    background:linear-gradient(135deg,#16a34a,#22c55e); color:#fff; vertical-align:middle; margin-left:6px; text-transform:uppercase; }
+
+  /* Capability grid */
+  .grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:16px 0; }
+  .feat{ border:1px solid var(--line); border-radius:14px; padding:14px 15px; background:#fff; }
+  .feat .ci{ font-size:22px; }
+  .feat b{ display:block; margin:6px 0 3px; font-size:14px; }
+  .feat span{ color:var(--muted); font-size:12.5px; }
+
+  .flow{ display:flex; flex-wrap:wrap; align-items:center; gap:7px; margin:16px 0; font-size:13px; }
+  .flow .step{ background:#fff; border:1.5px solid var(--accent-soft); border-radius:9px; padding:7px 13px; font-weight:600; }
+  .flow .arrow{ color:var(--accent); font-weight:800; }
+
+  .toc{ columns:2; column-gap:34px; font-size:13.5px; }
+  .toc a{ color:var(--fg); text-decoration:none; } .toc a:hover{ color:var(--accent); }
+  .big-code{ font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace; font-size:22px; font-weight:700;
+    background:var(--code-bg); color:#e2e8f0; padding:12px 20px; border-radius:12px; display:inline-block; letter-spacing:.08em; }
+
+  footer{ margin-top:48px; padding-top:16px; border-top:1px solid var(--line); color:var(--muted); font-size:12px; }
   @page{ margin:14mm 12mm; }
   @media print{
     body{ padding:0; max-width:none; } a{ color:inherit; text-decoration:none; }
-    .card, table, .flow{ break-inside:avoid; } h2,h3{ break-after:avoid; }
+    .hero{ margin:0; }
+    .feat, table, .flow, .grid, .note, .tip, .warn{ break-inside:avoid; } h2,h3{ break-after:avoid; }
   }
 </style>
 </head>
 <body>
 
-<header>
+<header class="hero">
   <div class="eyebrow">Innopolis Bio Innovations · PLM Platform</div>
   <h1>User Guide</h1>
-  <div class="sub">Engineering Data Backbone — Material Master, BOM, Procurement, Inventory &amp; Reports · Version 1.0</div>
+  <div class="sub">Your single, trusted home for materials, BOMs, procurement and stock —
+    from first enquiry to delivered goods.</div>
+  <div class="chips">
+    <span class="chip">Version 1.0.2</span>
+    <span class="chip">6 connected modules</span>
+    <span class="chip">No technical knowledge needed</span>
+  </div>
 </header>
 
 <div class="note">
-  This guide explains <strong>what the platform does and how your team uses it day to day</strong>. It is written for
-  everyone at Innopolis — engineers, purchase, stores, commercial and management. No technical knowledge is needed.
+  This guide explains <strong>what the platform does and how your team uses it day to day</strong> — written in plain
+  language for everyone at Innopolis: engineering, project management, purchase, stores, commercial and management.
 </div>
 
-<h2 id="toc">Contents</h2>
+<h3 style="margin-top:22px">Key capabilities at a glance</h3>
+<div class="grid">
+  <div class="feat"><div class="ci">🏷️</div><b>Smart material catalogue</b><span>Every material gets an intelligent code that describes it at a glance.</span></div>
+  <div class="feat"><div class="ci">🧬</div><b>Bills of Materials</b><span>Build BOMs from the catalogue with a formal review &amp; approval flow.</span></div>
+  <div class="feat"><div class="ci">🤝</div><b>Vendors &amp; quotes</b><span>Approved suppliers, RFQs and side-by-side quote comparison.</span></div>
+  <div class="feat"><div class="ci">📦</div><b>Procurement</b><span>Purchase orders with partial deliveries and receipt tracking.</span></div>
+  <div class="feat"><div class="ci">🏬</div><b>Live inventory</b><span>Real-time stock by warehouse with low-stock alerts.</span></div>
+  <div class="feat"><div class="ci">📊</div><b>Reports &amp; insight</b><span>Spend, vendor performance, stock value and project cost.</span></div>
+</div>
+
+<h2><span class="num" style="background:#334155">✦</span>Contents</h2>
 <div class="toc">
   1. <a href="#intro">What is the PLM Platform?</a><br/>
-  2. <a href="#start">Getting Started &amp; Logging In</a><br/>
-  3. <a href="#roles">Roles — Who Does What</a><br/>
-  4. <a href="#code">The Material Code Explained</a><br/>
-  5. <a href="#master">Module 1 · Material Master</a><br/>
-  6. <a href="#bom">Module 2 · Project &amp; BOM</a><br/>
-  7. <a href="#vendor">Module 3 · Vendor Database</a><br/>
-  8. <a href="#procure">Module 4 · Procurement</a><br/>
-  9. <a href="#inventory">Module 5 · Inventory</a><br/>
-  10. <a href="#reports">Module 6 · Reports &amp; Analytics</a><br/>
-  11. <a href="#glossary">Glossary</a><br/>
+  2. <a href="#whatsnew">What's New in this Version</a><br/>
+  3. <a href="#start">Getting Started &amp; Logging In</a><br/>
+  4. <a href="#roles">Roles — Who Does What</a><br/>
+  5. <a href="#code">The Material Code Explained</a><br/>
+  6. <a href="#master">Material Master</a><br/>
+  7. <a href="#bom">Project &amp; BOM</a><br/>
+  8. <a href="#vendor">Vendor Database</a><br/>
+  9. <a href="#procure">Procurement</a><br/>
+  10. <a href="#inventory">Inventory</a><br/>
+  11. <a href="#reports">Reports &amp; Analytics</a><br/>
+  12. <a href="#glossary">Glossary</a><br/>
 </div>
 
-<!-- ───────────────────────────── 1 ───────────────────────────── -->
-<h2 id="intro">1. What is the PLM Platform?</h2>
+<!-- 1 -->
+<h2 id="intro"><span class="num">1</span><span class="ico">🧭</span>What is the PLM Platform?</h2>
 <p>
   The Innopolis PLM (Product Lifecycle Management) platform is the company's single, trusted source of engineering and
   procurement data — the <strong>Engineering Data Backbone</strong>. Instead of materials, BOMs, vendor lists and purchase
@@ -102,8 +150,21 @@
   is picked into a BOM; the approved BOM feeds an RFQ; the winning quote becomes a Purchase Order; the received goods
   update Inventory; and every step feeds the Reports. Enter it right once, and it stays right everywhere.</div>
 
-<!-- ───────────────────────────── 2 ───────────────────────────── -->
-<h2 id="start">2. Getting Started &amp; Logging In</h2>
+<!-- 2 -->
+<h2 id="whatsnew"><span class="num">2</span><span class="ico">✨</span>What's New in this Version</h2>
+<p>Recent releases made the platform smarter around materials and procurement:</p>
+<table>
+  <tr><th>Enhancement</th><th>What it means for you</th></tr>
+  <tr><td><strong>Multiple preferred vendors</strong></td><td>A material can now list several preferred suppliers, not just one.</td></tr>
+  <tr><td><strong>Resource specifications</strong></td><td>Tag a material with one or more predefined specs (e.g. Standard, Heavy Duty, Food Grade).</td></tr>
+  <tr><td><strong>Purchase price history</strong></td><td>Each material remembers its last purchase price, date and vendor — updated automatically on every receipt, with a full history.</td></tr>
+  <tr><td><strong>Project Manager role</strong></td><td>A dedicated role that coordinates its assigned projects end to end.</td></tr>
+  <tr><td><strong>Partial goods receipt</strong></td><td>Receive an order in several deliveries; each is logged as its own Goods Receipt Note.</td></tr>
+  <tr><td><strong>Smarter search</strong></td><td>Find a material by its code, name, notes <em>or</em> its resource specification.</td></tr>
+</table>
+
+<!-- 3 -->
+<h2 id="start"><span class="num">3</span><span class="ico">🔑</span>Getting Started &amp; Logging In</h2>
 <ol>
   <li><strong>Log in</strong> with the email and password given to you by your administrator.</li>
   <li><strong>First-time login:</strong> if you were issued a temporary password, the system will require you to set a
@@ -115,8 +176,8 @@
 <p class="small muted">Sessions expire after a period of inactivity for security; simply log in again if that happens.
   Forgot your password? Your administrator can reset it for you — they cannot see your old one.</p>
 
-<!-- ───────────────────────────── 3 ───────────────────────────── -->
-<h2 id="roles">3. Roles — Who Does What</h2>
+<!-- 4 -->
+<h2 id="roles"><span class="num">4</span><span class="ico">👥</span>Roles — Who Does What</h2>
 <p>
   Every user has one <strong>role</strong>. Your role decides what you can <em>view</em> and <em>change</em>. Everyone can
   view the shared data they need; only the responsible role can create or modify it. The <strong>Administrator</strong>
@@ -126,21 +187,22 @@
   <tr><th>Role</th><th>Responsible for</th><th>Can create / edit</th></tr>
   <tr><td><strong>Administrator</strong></td><td>Users, configuration &amp; all master data</td><td>Everything</td></tr>
   <tr><td><strong>Engineering</strong></td><td>Materials (parts), Projects &amp; BOMs</td><td>Parts, projects, BOMs and BOM lines; submits BOMs for review</td></tr>
+  <tr><td><strong>Project Manager</strong> <span class="new">New</span></td><td>Coordinating assigned projects</td><td>Sees only their projects &amp; BOMs; sets the required-by date on each BOM line; releases approved BOMs for purchase; moves the project through its stages</td></tr>
   <tr><td><strong>Commercial</strong></td><td>Commercial review of BOMs &amp; pricing</td><td>Approves BOMs at the commercial review stage</td></tr>
   <tr><td><strong>Purchase</strong></td><td>Vendors &amp; buying</td><td>Suppliers, RFQs, Purchase Orders; releases approved BOMs to purchasing</td></tr>
   <tr><td><strong>Stores</strong></td><td>Warehouses &amp; stock</td><td>Warehouses, stock adjustments &amp; transfers, goods receipt</td></tr>
   <tr><td><strong>Management</strong></td><td>Oversight</td><td>Views dashboards, reports &amp; analytics</td></tr>
 </table>
-<p class="small muted">The classification data that underpins the codes (categories, subtypes, specifications, grades and
-  units) is maintained by the Administrator so the coding scheme stays consistent company-wide.</p>
+<p class="small muted">The classification data that underpins the codes (categories, subtypes, specifications, grades,
+  units and resource specifications) is maintained by the Administrator so the coding scheme stays consistent company-wide.</p>
 
-<!-- ───────────────────────────── 4 ───────────────────────────── -->
-<h2 id="code">4. The Material Code Explained</h2>
+<!-- 5 -->
+<h2 id="code"><span class="num">5</span><span class="ico">🏷️</span>The Material Code Explained</h2>
 <p>
   Every material carries an <strong>intelligent code</strong> — a code that tells you what the item <em>is</em> just by
   reading it. The code has four parts, each drawn from a controlled list:
 </p>
-<p style="text-align:center; margin:18px 0;"><span class="big-code">TT&nbsp;-&nbsp;SS&nbsp;-&nbsp;MM&nbsp;-&nbsp;DDDD</span></p>
+<p style="text-align:center; margin:20px 0;"><span class="big-code">TT&nbsp;-&nbsp;SS&nbsp;-&nbsp;MM&nbsp;-&nbsp;DDDD</span></p>
 <table>
   <tr><th>Segment</th><th>Means</th><th>Example</th></tr>
   <tr><td><code>TT</code></td><td><strong>Type</strong> — the top-level category (Material Category)</td><td>Fasteners</td></tr>
@@ -153,8 +215,8 @@
   This is why the <strong>Material Master must be set up first</strong> — it defines the building blocks for every code.
 </p>
 
-<!-- ───────────────────────────── 5 ───────────────────────────── -->
-<h2 id="master">5. Module 1 · Material Master</h2>
+<!-- 6 -->
+<h2 id="master"><span class="num">6</span><span class="ico">📚</span>Material Master</h2>
 <p>The Material Master is the catalogue at the heart of the platform. It is built in layers, from broad classification
   down to the individual material.</p>
 
@@ -166,41 +228,50 @@
   <tr><td><strong>Major Spec</strong></td><td>Primary specification — the <code>MM</code> (e.g. thread size, material grade).</td><td>Administrator</td></tr>
   <tr><td><strong>Grade</strong></td><td>Material grade / quality reference used on parts.</td><td>Administrator</td></tr>
   <tr><td><strong>Unit</strong></td><td>Units of measure (Nos, kg, m, …) used across the system.</td><td>Administrator</td></tr>
+  <tr><td><strong>Resource Specification</strong> <span class="new">New</span></td><td>A predefined spec label a material can be tagged with (e.g. Standard, Heavy Duty, Food Grade, Corrosion Resistant).</td><td>Administrator</td></tr>
   <tr><td><strong>Part (Material)</strong></td><td>The actual catalogued material, with its intelligent code, specs, grade, unit, sourcing (Make / Buy / Standard) and lifecycle.</td><td>Engineering</td></tr>
 </table>
-
-<h3>Category Management (worked example)</h3>
-<p>Categories are the first thing set up because they anchor the whole coding scheme. For each category the administrator records:</p>
-<ul>
-  <li><strong>Name</strong> — e.g. "Fasteners" (must be unique).</li>
-  <li><strong>Type code</strong> — the short <code>TT</code> code, e.g. "FS" (must be unique; stored in capitals).</li>
-  <li><strong>Default unit of measure</strong> — the unit new materials in this category start with (e.g. "Nos").</li>
-  <li><strong>Active / Inactive</strong> — inactive categories stay in the records but are hidden from new-material forms.</li>
-</ul>
-<div class="tip"><strong>Retiring vs deleting:</strong> to stop a category from being used going forward, set it to
-  <em>Inactive</em> rather than deleting it. That keeps all history intact while removing it from selection lists.
-  Deletions are "soft" — the record is hidden, never truly erased.</div>
-<div class="warn"><strong>Names and codes must be unique.</strong> If you try to reuse a name or type code that already
-  exists, the system will stop you so the catalogue stays clean.</div>
 
 <h3>Parts — the materials themselves</h3>
 <p>A <strong>Part</strong> is a real, orderable material. Engineering creates parts by combining the building blocks
   above; the system assembles the intelligent code automatically. Each part also records its <strong>lifecycle</strong>
   stage — Concept → In Design → In Review → Released → Production → Obsolete — so everyone knows whether a material is
-  ready to be used in production.</p>
+  ready to be used in production. When creating a material you can also add:</p>
+<ul>
+  <li><strong>Preferred vendors</strong> <span class="new">New</span> — one or more approved suppliers for the item.</li>
+  <li><strong>Resource specifications</strong> <span class="new">New</span> — one or more spec tags from the predefined list.</li>
+  <li><strong>Notes (remarks), make, model and drawing reference</strong> — free descriptive details.</li>
+  <li><strong>Opening purchase price</strong> — the last known price, which the system then keeps up to date (see below).</li>
+</ul>
 
-<!-- ───────────────────────────── 6 ───────────────────────────── -->
-<h2 id="bom">6. Module 2 · Project &amp; BOM</h2>
+<h3>Purchase price history <span class="new">New</span></h3>
+<p>Each material tracks its <strong>last purchase price, the date, and the vendor</strong> it was bought from. You enter
+  an opening price when the material is created; after that, <strong>every time the material is received against a
+  purchase order the price updates automatically</strong>, and a full price history is kept — so you always know what you
+  last paid and to whom.</p>
+
+<div class="tip"><strong>Find anything fast:</strong> search the catalogue by material <strong>code, name, notes, or
+  resource specification</strong> <span class="new">New</span> — handy when you remember the spec but not the code.</div>
+<div class="tip"><strong>Retiring vs deleting:</strong> to stop an item being used going forward, set it to
+  <em>Inactive</em> rather than deleting it — history stays intact while it's removed from selection lists. Deletions are
+  "soft": the record is hidden, never truly erased. Names and codes must be unique, so the catalogue stays clean.</div>
+
+<!-- 7 -->
+<h2 id="bom"><span class="num">7</span><span class="ico">🧬</span>Project &amp; BOM</h2>
 <p>
   A <strong>Project</strong> represents a customer job and moves through its own lifecycle (Enquiry → Technical Evaluation
   → Quotation → Project Order → Detailed Engineering → Final BOM → Purchase Release → Procurement → Fulfilment →
-  Completed). Projects and BOMs are numbered automatically (for example <code>INP-2026-001</code>).
+  Completed). Projects and BOMs are numbered automatically (for example <code>INP-2026-001</code>). A project can be
+  assigned a <strong>Project Manager</strong> <span class="new">New</span> who coordinates it — they see only their own
+  projects, move the project through its stages, and release its BOM for purchase.
 </p>
 <p>
   A <strong>BOM (Bill of Materials)</strong> is the structured list of every material and quantity needed to build the
   project's product. Engineering builds the BOM by adding <strong>lines</strong>, each pulling a material straight from
-  the Master (so specs, unit and cost come across automatically). The platform continuously rolls up totals — total
-  value, number of unique materials, count of critical items and long-lead items — as lines are added.
+  the Master (so specs, unit and cost come across automatically). The Project Manager can set a
+  <strong>required-by date</strong> <span class="new">New</span> on each line so purchasing knows when materials are
+  needed. The platform continuously rolls up totals — total value, unique materials, critical items and long-lead items —
+  as lines are added.
 </p>
 
 <h3>The BOM approval workflow</h3>
@@ -217,7 +288,7 @@
   <tr><td><strong>Draft</strong></td><td>Engineering builds and edits the BOM lines. This is the <em>only</em> stage where lines can be changed.</td><td>Engineering</td></tr>
   <tr><td><strong>Technical Review</strong></td><td>The technical content is checked.</td><td>Engineering</td></tr>
   <tr><td><strong>Commercial Review</strong></td><td>Pricing and commercial aspects are checked.</td><td>Commercial</td></tr>
-  <tr><td><strong>Approved</strong></td><td>The BOM is signed off and ready to be released.</td><td>Purchase (releases it)</td></tr>
+  <tr><td><strong>Approved</strong></td><td>The BOM is signed off and ready to be released.</td><td>Purchase or Project Manager</td></tr>
   <tr><td><strong>Released for Purchase</strong></td><td>Locked and handed to Procurement. This stage is final.</td><td>—</td></tr>
 </table>
 <ul>
@@ -228,8 +299,8 @@
 <div class="note"><strong>BOM analysis:</strong> at any point you can analyse a BOM's cost broken down by category,
   vendor, lead time or make-vs-buy — useful for planning procurement and spotting long-lead or high-cost items early.</div>
 
-<!-- ───────────────────────────── 7 ───────────────────────────── -->
-<h2 id="vendor">7. Module 3 · Vendor Database</h2>
+<!-- 8 -->
+<h2 id="vendor"><span class="num">8</span><span class="ico">🤝</span>Vendor Database</h2>
 <p>The Vendor Database is the Purchase team's list of approved suppliers. Each supplier record holds contact and
   commercial details plus an approval <strong>status</strong>:</p>
 <table>
@@ -239,11 +310,11 @@
   <tr><td><strong>Conditional</strong></td><td>Usable with conditions / caution.</td></tr>
   <tr><td><strong>Under Review</strong></td><td>Being evaluated — not yet cleared.</td></tr>
 </table>
-<p>Suppliers are linked to materials and to quotations, so the platform can later report on how much you spend with each
-  vendor and how they perform on delivery.</p>
+<p>Suppliers are linked to materials (as preferred vendors) and to quotations, so the platform can later report on how
+  much you spend with each vendor and how they perform on delivery.</p>
 
-<!-- ───────────────────────────── 8 ───────────────────────────── -->
-<h2 id="procure">8. Module 4 · Procurement</h2>
+<!-- 9 -->
+<h2 id="procure"><span class="num">9</span><span class="ico">📦</span>Procurement</h2>
 <p>Procurement turns an approved BOM into actual purchased goods, through a clear four-step flow:</p>
 <div class="flow">
   <span class="step">RFQ</span><span class="arrow">→</span>
@@ -276,16 +347,26 @@
 </div>
 <p class="small muted">A PO can also be <strong>Cancelled</strong>. Line totals (quantity × unit price) are calculated for you.</p>
 
-<h3>Step 4 · Goods Receipt</h3>
-<p>When goods arrive, Stores (or Purchase) records a <strong>receipt</strong> against the PO, entering how much was
-  received and how much was accepted vs rejected after inspection. The PO updates to <em>Partially Received</em> or
-  <em>Received</em> accordingly.</p>
-<div class="warn"><strong>Rejected goods never enter stock.</strong> Only accepted quantities are posted to inventory,
-  keeping your stock figures trustworthy. When a receiving warehouse is specified, accepted goods flow straight into
-  Inventory automatically.</div>
+<h3>Step 4 · Goods Receipt — now supports partial deliveries <span class="new">New</span></h3>
+<p>Orders don't always arrive in one shipment. When goods arrive, Stores (or Purchase) records a
+  <strong>receipt</strong> against the PO — entering <strong>how much arrived in that delivery</strong> and how much was
+  accepted vs rejected after inspection. You can <strong>receive the same order again</strong> as later shipments arrive;
+  the system adds them up and keeps a full delivery history.</p>
+<ul>
+  <li>Each delivery is saved as its own <strong>Goods Receipt Note (GRN)</strong> — a permanent record of who received
+    what, when, and in which batch.</li>
+  <li>The PO shows <em>Partially Received</em> until the full ordered quantity has arrived, then <em>Received</em>.</li>
+  <li>You can view the complete <strong>delivery history</strong> for any PO at any time.</li>
+</ul>
+<div class="warn"><strong>Rejected goods never enter stock.</strong> Only accepted quantities are posted to inventory, and
+  rejected units keep the line open so a replacement can be received later — keeping both your stock and your order status
+  trustworthy.</div>
+<div class="tip"><strong>Example:</strong> an order for 100 arrives as 40, then 60. Enter <em>40</em> on the first delivery
+  and <em>60</em> on the second — the platform shows 40 received (60 remaining), then 100 received and marks the PO
+  <em>Received</em>.</div>
 
-<!-- ───────────────────────────── 9 ───────────────────────────── -->
-<h2 id="inventory">9. Module 5 · Inventory</h2>
+<!-- 10 -->
+<h2 id="inventory"><span class="num">10</span><span class="ico">🏬</span>Inventory</h2>
 <p>Inventory tracks how much of each material you hold, and where. Stock is held across <strong>warehouses</strong>
   (Distribution, Manufacturing, Buffer or Transit) and every change is written to a permanent <strong>stock ledger</strong>
   — an append-only history you can always audit.</p>
@@ -305,8 +386,8 @@
 <p class="small muted">Each material's availability is kept in step automatically — <em>In Stock</em>, <em>Low Stock</em> or
   <em>Out of Stock</em> — based on its quantity and reorder point.</p>
 
-<!-- ───────────────────────────── 10 ───────────────────────────── -->
-<h2 id="reports">10. Module 6 · Reports &amp; Analytics</h2>
+<!-- 11 -->
+<h2 id="reports"><span class="num">11</span><span class="ico">📊</span>Reports &amp; Analytics</h2>
 <p>The Reports module turns everyday activity into insight. Management and other roles can view:</p>
 <table>
   <tr><th>Report</th><th>Answers the question…</th></tr>
@@ -320,27 +401,30 @@
 <p>Because every module feeds the same data backbone, these reports are always based on live, consistent figures — no
   manual consolidation required.</p>
 
-<!-- ───────────────────────────── 11 ───────────────────────────── -->
-<h2 id="glossary">11. Glossary</h2>
+<!-- 12 -->
+<h2 id="glossary"><span class="num">12</span><span class="ico">📖</span>Glossary</h2>
 <table>
   <tr><th>Term</th><th>Meaning</th></tr>
   <tr><td><strong>PLM</strong></td><td>Product Lifecycle Management — managing product data from concept to delivery.</td></tr>
   <tr><td><strong>Material Master</strong></td><td>The central catalogue of all materials and their classification.</td></tr>
   <tr><td><strong>Intelligent code</strong></td><td>The <code>TT-SS-MM-DDDD</code> code that describes a material at a glance.</td></tr>
   <tr><td><strong>Part</strong></td><td>An individual catalogued material.</td></tr>
+  <tr><td><strong>Resource specification</strong></td><td>A predefined spec label (e.g. Heavy Duty) a material can be tagged with.</td></tr>
+  <tr><td><strong>Preferred vendor</strong></td><td>An approved supplier listed against a material.</td></tr>
   <tr><td><strong>BOM</strong></td><td>Bill of Materials — the list of items and quantities to build a product.</td></tr>
+  <tr><td><strong>Required-by date</strong></td><td>The date a BOM line's material is needed, set by the Project Manager.</td></tr>
   <tr><td><strong>Lifecycle</strong></td><td>The stages a material or project passes through over its life.</td></tr>
   <tr><td><strong>RFQ</strong></td><td>Request for Quotation — asking vendors to quote prices.</td></tr>
   <tr><td><strong>Quotation</strong></td><td>A vendor's priced offer in response to an RFQ.</td></tr>
   <tr><td><strong>PO</strong></td><td>Purchase Order — a formal order placed with a vendor.</td></tr>
-  <tr><td><strong>Goods receipt</strong></td><td>Recording items physically received against a PO.</td></tr>
+  <tr><td><strong>Goods receipt / GRN</strong></td><td>A record of items physically received against a PO (one per delivery).</td></tr>
   <tr><td><strong>Reorder point</strong></td><td>The stock level at which a material should be replenished.</td></tr>
   <tr><td><strong>Soft delete</strong></td><td>Hiding a record from view while keeping it in the database for history.</td></tr>
   <tr><td><strong>Audit trail</strong></td><td>A permanent record of who changed what, and when.</td></tr>
 </table>
 
 <footer>
-  Innopolis Bio Innovations · PLM Platform User Guide · Version 1.0 ·
+  Innopolis Bio Innovations · PLM Platform User Guide · Version 1.0.2 ·
   This document describes platform capabilities and workflows for end users.
 </footer>
 
